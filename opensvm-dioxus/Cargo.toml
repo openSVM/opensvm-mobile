@@ -1,0 +1,34 @@
+[package]
+name = "opensvm-dioxus"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dioxus = "0.4.0"
+dioxus-web = "0.4.0"
+dioxus-router = "0.4.0"
+dioxus-signals = "0.4.0"
+dioxus-free-icons = { version = "0.7.0", features = ["font-awesome-solid"] }
+wasm-bindgen = "0.2.87"
+web-sys = { version = "0.3.64", features = [
+    "Storage",
+    "Window",
+    "Document",
+    "Element",
+    "HtmlElement",
+    "HtmlInputElement",
+    "CssStyleDeclaration",
+    "DomRect",
+    "Navigator",
+    "Clipboard",
+    "ClipboardEvent",
+    "Location",
+] }
+gloo = "0.10.0"
+log = "0.4.20"
+console_log = "1.0.0"
+serde = { version = "1.0.188", features = ["derive"] }
+serde_json = "1.0.107"
+chrono = { version = "0.4.31", features = ["serde"] }
+wasm-bindgen-futures = "0.4.37"
+uuid = { version = "1.4.1", features = ["v4", "js"] }
