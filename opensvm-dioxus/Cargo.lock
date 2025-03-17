@@ -770,6 +770,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dioxus-mobile"
+version = "0.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "951e48684126707623e89ee9cb44d444c9f06c5de4594cbccb6ccd25cdf4b1c9"
+dependencies = [
+ "dioxus-desktop",
+]
+
+[[package]]
 name = "dioxus-router"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2434,6 +2443,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "num_cpus"
+version = "1.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4161fcb6d602d4d2081af7c3a45852d875a03dd337a6bfdd6e06407b61342a43"
+dependencies = [
+ "hermit-abi 0.3.9",
+ "libc",
+]
+
+[[package]]
 name = "num_enum"
 version = "0.5.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2526,12 +2545,15 @@ dependencies = [
  "dioxus",
  "dioxus-desktop",
  "dioxus-free-icons",
+ "dioxus-mobile",
  "dioxus-router",
  "dioxus-signals",
  "dioxus-web",
  "env_logger",
  "gloo 0.10.0",
+ "js-sys",
  "log",
+ "num_cpus",
  "serde",
  "serde_json",
  "uuid",

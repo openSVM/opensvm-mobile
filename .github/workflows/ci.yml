@@ -53,7 +53,7 @@ jobs:
         working-directory: opensvm-dioxus
         run: cargo test
 
-  # Build for web (WASM)
+  # Build for web (WASM) with optimizations
   build-web:
     name: Build Web
     runs-on: ubuntu-latest
@@ -80,10 +80,26 @@ jobs:
       - name: Install Dioxus CLI
         run: cargo install dioxus-cli --locked
 
-      - name: Build for web
+      - name: Install wasm-opt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y binaryen
+
+      - name: Install js-minifier
+        run: npm install -g terser
+
+      - name: Build for web (with optimizations)
         working-directory: opensvm-dioxus
         run: |
-          dioxus build --release --platform web
+          # Build using the wasm-release profile optimized for size
+          RUSTFLAGS="-C target-feature=+atomics,+bulk-memory,+simd128" \
+          dioxus build --features web --profile wasm-release --platform web --release
+          
+          # Additional optimization with wasm-opt for smaller binary size
+          find dist -name "*.wasm" -exec wasm-opt -Oz -o {} {} \;
+          
+          # Minify JavaScript files
+          find dist -name "*.js" -exec terser --compress --mangle -o {} {} \;
 
       - name: Package web build
         working-directory: opensvm-dioxus
@@ -143,10 +159,15 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
 
-      - name: Build desktop app
+      - name: Build desktop app with optimizations
         working-directory: opensvm-dioxus
         run: |
-          dioxus build --release --platform desktop --target ${{ matrix.target }}
+          # Install additional dependency for desktop optimizations
+          cargo add num_cpus --features
+          
+          # Build with desktop-specific optimizations
+          RUSTFLAGS="-C target-cpu=native -C opt-level=3 -C lto=fat" \
+          dioxus build --features desktop --profile desktop-release --release --platform desktop --target ${{ matrix.target }}
 
       - name: Rename binary (Linux/macOS)
         if: matrix.os != 'windows-latest'
@@ -203,10 +224,22 @@ jobs:
       - name: Install cargo-ndk
         run: cargo install cargo-ndk
 
-      - name: Build for Android
+      - name: Install Android-specific dependencies
+        run: |
+          cargo add num_cpus --features
+      
+      - name: Build for Android with optimizations
         working-directory: opensvm-dioxus
         run: |
-          dioxus build --release --platform android
+          # Build with Android-specific optimizations
+          RUSTFLAGS="-C opt-level=3 -C lto=thin -C codegen-units=1" \
+          dioxus build --features android --release --platform android
+          
+          # Apply additional APK optimizations using Android build tools
+          cd target/release/apk
+          find . -name "*.apk" -exec echo "Optimizing {}" \; -exec zipalign -v -p 4 {} {}.aligned \; -exec mv {}.aligned {} \;
+          # Sign APK with debug key for testing - in production you would use your release keystore
+          find . -name "*.apk" -exec echo "Signing {}" \; -exec $ANDROID_SDK_ROOT/build-tools/*/apksigner sign --ks ~/.android/debug.keystore --ks-pass pass:android --key-pass pass:android {} \;
 
       - name: Upload Android APK
         uses: actions/upload-artifact@v3

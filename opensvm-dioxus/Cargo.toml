@@ -9,15 +9,73 @@ repository = "https://github.com/openSVM/opensvm-mobile"
 homepage = "https://github.com/openSVM/opensvm-mobile"
 documentation = "https://github.com/openSVM/opensvm-mobile/tree/main/opensvm-dioxus"
 
+# Platform-specific features
+[features]
+default = []
+web = [
+    "dioxus-web",
+    "wasm-bindgen",
+    "wasm-bindgen-futures",
+    "web-sys",
+    "js-sys",
+    "gloo",
+    "console_log",
+]
+desktop = [
+    "dioxus-desktop",
+    "env_logger",
+    "num_cpus",
+]
+android = [
+    "dioxus-mobile",
+    "env_logger",
+    "num_cpus",
+]
+
+# Define platform optimization profiles
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+
+# Optimize for web (smaller binary size)
+[profile.release.package."*"]
+opt-level = 'z'
+
+# Profile for optimizing binary size (used for web)
+[profile.wasm-release]
+inherits = "release"
+opt-level = 'z' # Optimize for size
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+
+# Profile for desktop builds (optimized for speed)
+[profile.desktop-release]
+inherits = "release"
+opt-level = 3 # Optimize for speed
+lto = "fat"
+codegen-units = 1
+
 [dependencies]
 dioxus = "0.4.0"
-dioxus-web = "0.4.0"
-dioxus-desktop = "0.4.0"
 dioxus-router = "0.4.0"
 dioxus-signals = "0.4.0"
 dioxus-free-icons = { version = "0.7.0", features = ["font-awesome-solid"] }
-wasm-bindgen = "0.2.87"
-web-sys = { version = "0.3.64", features = [
+log = "0.4.20"
+serde = { version = "1.0.188", features = ["derive"] }
+serde_json = "1.0.107"
+chrono = { version = "0.4.31", features = ["serde"] }
+
+# Optional dependencies based on features
+dioxus-web = { version = "0.4.0", optional = true }
+dioxus-desktop = { version = "0.4.0", optional = true }
+dioxus-mobile = { version = "0.4.0", optional = true }
+wasm-bindgen = { version = "0.2.87", optional = true }
+js-sys = { version = "0.3.64", optional = true }
+web-sys = { version = "0.3.64", optional = true, features = [
     "Storage",
     "Window",
     "Document",
@@ -30,13 +88,13 @@ web-sys = { version = "0.3.64", features = [
     "Clipboard",
     "ClipboardEvent",
     "Location",
+    "Performance",
 ] }
-gloo = "0.10.0"
-log = "0.4.20"
-console_log = "1.0.0"
-env_logger = "0.10.0"
-serde = { version = "1.0.188", features = ["derive"] }
-serde_json = "1.0.107"
-chrono = { version = "0.4.31", features = ["serde"] }
-wasm-bindgen-futures = "0.4.37"
+gloo = { version = "0.10.0", optional = true }
+console_log = { version = "1.0.0", optional = true }
+env_logger = { version = "0.10.0", optional = true }
+wasm-bindgen-futures = { version = "0.4.37", optional = true }
 uuid = { version = "1.4.1", features = ["v4", "js"] }
+
+# Optimization-related dependencies
+num_cpus = { version = "1.16.0", optional = true }

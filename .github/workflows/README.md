@@ -15,9 +15,9 @@ The CI workflow automates building, testing, and releasing the OpenSVM-Dioxus ap
 ### Jobs
 
 1. **build-and-test**: Builds and tests the application on Ubuntu, macOS, and Windows
-2. **build-web**: Builds the web (WASM) version of the application
-3. **build-desktop**: Builds desktop versions for Linux, macOS (Intel and Apple Silicon), and Windows
-4. **build-android**: Builds the Android APK
+2. **build-web**: Builds the optimized web (WASM) version of the application, including WASM size reduction, code minification, and SIMD acceleration
+3. **build-desktop**: Builds optimized desktop versions for Linux, macOS (Intel and Apple Silicon), and Windows with native CPU instruction sets and performance tuning
+4. **build-android**: Builds optimized Android APK with resource management and balanced performance/size optimizations
 5. **create-release**: Collects all artifacts and attaches them to the GitHub release
 6. **homebrew**: Creates and updates a Homebrew formula for easy installation on macOS
 
@@ -52,6 +52,31 @@ brew tap opensvm/opensvm
 brew install opensvm-dioxus
 ```
 
+### Platform-Specific Optimizations
+
+The CI workflow applies several platform-specific optimizations to ensure optimal performance:
+
+#### Web (WASM) Optimizations
+
+- Uses custom `wasm-release` profile optimized for binary size
+- Enables WASM SIMD instructions with `-C target-feature=+atomics,+bulk-memory,+simd128`
+- Applies `wasm-opt -Oz` for additional size optimization
+- Minifies JavaScript with terser for faster loading
+
+#### Desktop Optimizations
+
+- Uses `-C target-cpu=native` to utilize all available CPU features
+- Applies fat LTO for maximum runtime performance
+- Configures thread pool size based on available CPU cores
+- Optimizes memory allocator settings for desktop environments
+
+#### Android Optimizations
+
+- Uses thin LTO for balanced performance and APK size
+- Optimizes APKs with zipalign for improved runtime memory usage
+- Automatically signs APKs for installation
+- Limits background threads to conserve battery life
+
 ### Customization
 
 To modify the CI workflow:
@@ -59,3 +84,9 @@ To modify the CI workflow:
 1. Edit the `.github/workflows/ci.yml` file
 2. Commit and push your changes
 3. The updated workflow will be used for subsequent runs
+
+To modify platform-specific optimizations:
+
+1. Edit `opensvm-dioxus/src/platform_optimizations.rs` for runtime optimizations
+2. Edit `opensvm-dioxus/Cargo.toml` for compile-time optimizations
+3. Update the appropriate job in the CI workflow for build-time optimizations

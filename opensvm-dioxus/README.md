@@ -104,12 +104,52 @@ brew tap opensvm/opensvm
 brew install opensvm-dioxus
 ```
 
+## Platform-Specific Optimizations
+
+This application implements several platform-specific optimizations to ensure optimal performance across different devices:
+
+### Web Optimizations
+
+- **WASM Size Reduction**: Uses special build profile (`wasm-release`) to minimize binary size
+- **Code Minification**: JavaScript and CSS are minified for faster loading
+- **WASM Optimization**: Uses `wasm-opt` to further reduce WebAssembly file size
+- **SIMD Acceleration**: Enables WASM SIMD instructions where supported
+- **Performance Hints**: Sets browser performance hints for computationally intensive operations
+
+### Desktop Optimizations
+
+- **Native CPU Instructions**: Builds with `-C target-cpu=native` to use all available CPU features
+- **Thread Pool Tuning**: Automatically sizes thread pools based on available CPU cores
+- **Memory Optimizations**: Configures memory allocator for desktop environments
+- **Link-Time Optimization**: Uses fat LTO for maximum runtime performance
+
+### Mobile (Android) Optimizations
+
+- **APK Optimization**: Uses zipalign for better runtime memory usage
+- **Resource Management**: Limits thread usage to save battery life
+- **Binary Size Optimization**: Uses thin LTO to balance size and performance
+- **Adaptive Performance**: Detects device capabilities and adjusts accordingly
+
+### How to Build with Optimizations
+
+```bash
+# Web (optimized for size)
+dioxus build --features web --profile wasm-release --platform web --release
+
+# Desktop (optimized for speed)
+RUSTFLAGS="-C target-cpu=native -C opt-level=3" dioxus build --features desktop --profile desktop-release --platform desktop --release
+
+# Android (balanced optimization)
+RUSTFLAGS="-C opt-level=3 -C lto=thin" dioxus build --features android --platform android --release
+```
+
 ## Continuous Integration
 
 This project uses GitHub Actions for continuous integration and deployment. The CI pipeline automatically:
 
 - Builds and tests the application on multiple platforms
-- Creates release binaries for Windows, macOS, Linux, Android, and the web
+- Creates release binaries for Windows, macOS, Linux, Android, and the web with platform-specific optimizations
+- Applies additional post-build optimizations (minification, compression)
 - Generates a Homebrew formula for easy installation on macOS
 
 For more details, see the [CI workflow documentation](../.github/workflows/README.md).
@@ -118,14 +158,15 @@ For more details, see the [CI workflow documentation](../.github/workflows/READM
 
 ```
 src/
-├── app.rs              # Main application component
-├── assets/             # Static assets
-├── components/         # Reusable UI components
-├── constants/          # App constants
-├── main.rs             # Entry point
-├── routes/             # Application routes
-├── stores/             # State management
-└── utils/              # Utility functions
+├── app.rs                      # Main application component
+├── assets/                     # Static assets
+├── components/                 # Reusable UI components
+├── constants/                  # App constants
+├── main.rs                     # Entry point
+├── platform_optimizations.rs   # Platform-specific optimizations
+├── routes/                     # Application routes
+├── stores/                     # State management
+└── utils/                      # Utility functions
 ```
 
 ## License
