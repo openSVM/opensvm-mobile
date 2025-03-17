@@ -1,12 +1,17 @@
 # OpenSVM Mobile
 
-A mobile application for exploring the Solana blockchain, monitoring validators, and managing your Solana wallet.
+A multi-platform application for exploring the Solana blockchain, monitoring validators, and managing your Solana wallet. Available as a React Native mobile app and a Dioxus desktop/web app.
 
 ![OpenSVM Mobile](https://via.placeholder.com/800x400?text=OpenSVM+Mobile)
 
 ## Overview
 
-OpenSVM Mobile is a comprehensive mobile application built with Expo and React Native that provides tools for interacting with the Solana blockchain. The application offers real-time monitoring of validator performance, blockchain exploration, wallet management, and an AI assistant for Solana-related queries.
+OpenSVM Mobile is a comprehensive application that provides tools for interacting with the Solana blockchain. The application offers real-time monitoring of validator performance, blockchain exploration, wallet management, and an AI assistant for Solana-related queries.
+
+The project consists of two implementations:
+
+1. **opensvm-reactnative**: A mobile application built with Expo and React Native
+2. **opensvm-dioxus**: A cross-platform desktop and web application built with Rust and Dioxus
 
 ## Features
 
@@ -73,8 +78,10 @@ npm start
 
 ## Project Structure
 
+### React Native Application
+
 ```
-opensvm-mobile/
+opensvm-reactnative/
 ├── app/                    # Main application screens and navigation
 │   ├── (tabs)/             # Tab-based navigation screens
 │   ├── account/            # Account-related screens
@@ -90,7 +97,26 @@ opensvm-mobile/
 └── utils/                  # Utility functions
 ```
 
+### Dioxus Application
+
+```
+opensvm-dioxus/
+├── src/                    # Source code
+│   ├── app.rs              # Main application component
+│   ├── assets/             # Static assets
+│   ├── components/         # Reusable UI components
+│   ├── constants/          # App constants
+│   ├── main.rs             # Entry point
+│   ├── routes/             # Application routes
+│   ├── stores/             # State management
+│   └── utils/              # Utility functions
+├── Cargo.toml              # Rust dependencies and project configuration
+└── Cargo.lock              # Locked dependencies
+```
+
 ## Technologies
+
+### React Native Application
 
 - **Framework**: [Expo](https://expo.dev/) & [React Native](https://reactnative.dev/)
 - **Navigation**: [Expo Router](https://docs.expo.dev/routing/introduction/)
@@ -98,6 +124,26 @@ opensvm-mobile/
 - **UI Components**: [Lucide React Native](https://lucide.dev/guide/packages/lucide-react-native)
 - **Storage**: [AsyncStorage](https://react-native-async-storage.github.io/async-storage/)
 - **Charts**: Custom chart components
+
+### Dioxus Application
+
+- **Framework**: [Dioxus](https://dioxuslabs.com/) (Rust-based UI framework)
+- **Router**: [Dioxus Router](https://dioxuslabs.com/docs/0.4/router/index.html)
+- **State Management**: [Dioxus Signals](https://dioxuslabs.com/docs/0.4/guide/en/state_management.html)
+- **UI Components**: Custom components and [Dioxus Free Icons](https://github.com/nissy-dev/dioxus-free-icons)
+- **Web Support**: WebAssembly (WASM) via [wasm-bindgen](https://github.com/rustwasm/wasm-bindgen)
+- **Desktop Support**: Native binaries for Windows, macOS, and Linux
+
+## Continuous Integration
+
+This project uses GitHub Actions for continuous integration and deployment:
+
+- **Automated Testing**: All pull requests and pushes to the main branch are automatically tested
+- **Cross-Platform Builds**: The CI pipeline builds the application for multiple platforms
+- **Release Automation**: When a new release is created, binaries are automatically built and attached to the release
+- **Homebrew Formula**: A Homebrew formula is automatically generated for easy installation on macOS
+
+For more details, see the [CI workflow documentation](.github/workflows/README.md).
 
 ## Contributing
 

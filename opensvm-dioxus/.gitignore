@@ -1,0 +1,21 @@
+# Rust build artifacts
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# Dioxus build artifacts
+/dist/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# macOS files
+.DS_Store
+
+# Windows files
+Thumbs.db
+
+# Log files
+*.log

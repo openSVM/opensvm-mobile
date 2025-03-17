@@ -1,3 +1,5 @@
+//! Application routes
+
 pub mod explorer;
 pub mod validators;
 pub mod solanow;
