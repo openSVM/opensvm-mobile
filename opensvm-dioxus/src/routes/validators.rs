@@ -1,15 +1,13 @@
-use dioxus::prelude::*;
-use crate::components::validator_analytics::ValidatorAnalytics;
+//! Validators page
 
-#[component]
+use dioxus::prelude::*;
+
+/// Validators page component
 pub fn ValidatorsPage(cx: Scope) -> Element {
     cx.render(rsx! {
-        div { class: "container mx-auto p-4",
-            h1 { class: "text-xl font-bold mb-4 mono", "Validators" }
-            p { class: "text-secondary mb-6", "Explore the network validators and their performance metrics." }
-            
-            // Reuse the validator analytics component
-            ValidatorAnalytics {}
+        div { class: "validators-page",
+            h1 { "Solana Validators" }
+            p { "Monitor validator performance metrics and network statistics." }
         }
     })
 }
