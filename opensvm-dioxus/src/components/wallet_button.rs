@@ -29,7 +29,7 @@ pub fn WalletButton(cx: Scope) -> Element {
             onclick: handle_wallet_click,
             
             Icon {
-                icon: Wallet,
+                icon: FaWallet,
                 width: 16,
                 height: 16,
                 fill: if wallet.read().is_connected { "var(--text)" } else { "white" }

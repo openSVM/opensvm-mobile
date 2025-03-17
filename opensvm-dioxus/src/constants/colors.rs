@@ -14,17 +14,17 @@ impl Colors {
     pub const SUCCESS: &'static str = "#00D181";
     pub const ERROR: &'static str = "#FF4B4B";
     pub const WARNING: &'static str = "#FFB800";
-    
-    // Dark theme colors
-    pub struct Dark;
-    
-    impl Dark {
-        pub const BACKGROUND: &'static str = "#1A1B1E";
-        pub const SURFACE: &'static str = "#212529";
-        pub const SURFACE_LIGHT: &'static str = "#343A40";
-        pub const TEXT: &'static str = "#F8F9FA";
-        pub const TEXT_SECONDARY: &'static str = "#ADB5BD";
-        pub const TEXT_TERTIARY: &'static str = "#6C757D";
-        pub const BORDER: &'static str = "#343A40";
-    }
+}
+
+// Dark theme colors
+pub struct DarkColors;
+
+impl DarkColors {
+    pub const BACKGROUND: &'static str = "#1A1B1E";
+    pub const SURFACE: &'static str = "#212529";
+    pub const SURFACE_LIGHT: &'static str = "#343A40";
+    pub const TEXT: &'static str = "#F8F9FA";
+    pub const TEXT_SECONDARY: &'static str = "#ADB5BD";
+    pub const TEXT_TERTIARY: &'static str = "#6C757D";
+    pub const BORDER: &'static str = "#343A40";
 }

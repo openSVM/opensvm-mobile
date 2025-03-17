@@ -67,13 +67,11 @@ pub fn get_current_theme(theme_store: Signal<ThemeState>) -> Theme {
     
     match state.theme {
         Theme::System => {
-            // Check system preference
+            // Check system preference using media query
             if let Some(window) = web_sys::window() {
-                if let Ok(media_query) = window.match_media("(prefers-color-scheme: dark)") {
-                    if let Some(media_query) = media_query {
-                        if media_query.matches() {
-                            return Theme::Dark;
-                        }
+                if let Ok(Some(media_query)) = window.match_media("(prefers-color-scheme: dark)") {
+                    if media_query.matches() {
+                        return Theme::Dark;
                     }
                 }
             }

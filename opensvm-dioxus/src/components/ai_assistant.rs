@@ -1,14 +1,14 @@
 use dioxus::prelude::*;
-use dioxus_free_icons::icons::lucide_icons::{Bot, Send};
+use dioxus_free_icons::icons::fa_solid_icons::{FaRobot, FaPaperPlane};
 use dioxus_free_icons::Icon;
 
-#[derive(Props)]
+#[derive(Props, PartialEq)]
 pub struct AIAssistantProps {
     #[props(optional)]
     pub expanded: Option<bool>,
 }
 
-#[component]
+#[component(no_case_check)]
 pub fn AIAssistant(cx: Scope<AIAssistantProps>) -> Element {
     let message = use_state(cx, String::new);
     let expanded = cx.props.expanded.unwrap_or(false);
@@ -30,7 +30,7 @@ pub fn AIAssistant(cx: Scope<AIAssistantProps>) -> Element {
         div { class: "p-4",
             div { class: "flex items-center gap-3 mb-6",
                 Icon {
-                    icon: Bot,
+                    icon: FaRobot,
                     width: 24,
                     height: 24,
                     fill: "var(--primary)"
@@ -66,7 +66,7 @@ pub fn AIAssistant(cx: Scope<AIAssistantProps>) -> Element {
                     onclick: handle_send,
                     
                     Icon {
-                        icon: Send,
+                        icon: FaPaperPlane,
                         width: 20,
                         height: 20,
                         fill: "white"

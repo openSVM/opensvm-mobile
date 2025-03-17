@@ -158,7 +158,7 @@ pub fn TransactionPage(cx: Scope) -> Element {
                     
                     // Arrow
                     div { class: "flex justify-center my-3",
-                        Icon { icon: ArrowRightLeft, width: 20, height: 20, fill: "var(--text-secondary)" }
+                        Icon { icon: FaExchangeAlt, width: 20, height: 20, fill: "var(--text-secondary)" }
                     }
                     
                     // To address

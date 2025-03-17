@@ -78,7 +78,7 @@ pub fn WalletPage(cx: Scope) -> Element {
                             
                             button { class: "bg-transparent border-none cursor-pointer",
                                 Icon { 
-                                    icon: ExternalLink,
+                                    icon: FaExternalLinkAlt,
                                     width: 20,
                                     height: 20,
                                     fill: "var(--text-secondary)"
@@ -104,7 +104,7 @@ pub fn WalletPage(cx: Scope) -> Element {
                 }
                 
                 // Recent transactions
-                TransactionList { title: Some("Your Transactions".to_string()) }
+                TransactionList { title: "Your Transactions".to_string() }
             }
         })
     }

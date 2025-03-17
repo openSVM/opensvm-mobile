@@ -73,7 +73,7 @@ pub fn AccountPage(cx: Scope) -> Element {
                             
                             button { class: "bg-transparent border-none cursor-pointer",
                                 Icon { 
-                                    icon: ExternalLink,
+                                    icon: FaExternalLinkAlt,
                                     width: 20,
                                     height: 20,
                                     fill: "var(--text-secondary)"
@@ -116,7 +116,7 @@ pub fn AccountPage(cx: Scope) -> Element {
                 }
                 
                 // Account transactions
-                TransactionList { title: Some("Account Transactions".to_string()) }
+                TransactionList { title: "Account Transactions".to_string() }
             }
         })
     } else {

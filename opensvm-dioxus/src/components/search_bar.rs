@@ -135,7 +135,7 @@ pub fn SearchBar<'a>(cx: Scope<'a, SearchBarProps<'a>>) -> Element {
                                 class: "bg-transparent border-none cursor-pointer",
                                 onclick: handle_clear,
                                 Icon { 
-                                    icon: X,
+                                    icon: FaTimes,
                                     width: 18,
                                     height: 18,
                                     fill: "var(--text-secondary)"

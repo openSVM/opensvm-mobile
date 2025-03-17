@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 
-#[derive(Props)]
+#[derive(Props, PartialEq)]
 pub struct SkeletonProps {
     pub height: u32,
     pub width: u32,
@@ -10,7 +10,7 @@ pub struct SkeletonProps {
 
 #[component]
 pub fn Skeleton(cx: Scope<SkeletonProps>) -> Element {
-    let style = format!(
+    let style_str = format!(
         "height: {}px; width: {}px; background-color: var(--surface-light); border-radius: 4px; animation: pulse 1.5s infinite; {}",
         cx.props.height,
         cx.props.width,
@@ -19,7 +19,7 @@ pub fn Skeleton(cx: Scope<SkeletonProps>) -> Element {
     
     cx.render(rsx! {
         div {
-            style: "{style}",
+            style: "{style_str}",
             // Add keyframes for the pulse animation
             style { "
                 @keyframes pulse {

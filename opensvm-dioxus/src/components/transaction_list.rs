@@ -26,7 +26,7 @@ pub enum TransactionStatus {
 }
 
 // Props for the transaction list component
-#[derive(Props)]
+#[derive(Props, PartialEq)]
 pub struct TransactionListProps {
     #[props(optional)]
     pub transactions: Option<Vec<Transaction>>,
@@ -131,7 +131,7 @@ pub fn TransactionList(cx: Scope<TransactionListProps>) -> Element {
                                     // Amount and arrow
                                     div { class: "flex items-center gap-3",
                                         span { class: "font-bold", "{tx.amount} SOL" }
-                                        Icon { icon: ChevronRight, width: 16, height: 16, fill: "var(--text-secondary)" }
+                                        Icon { icon: FaChevronRight, width: 16, height: 16, fill: "var(--text-secondary)" }
                                     }
                                 }
                             }

@@ -131,7 +131,7 @@ pub fn ValidatorAnalytics(cx: Scope) -> Element {
             div { class: "stats-grid",
                 StatsCard {
                     icon: cx.render(rsx! {
-                        Icon { icon: Shield, width: 18, height: 18, fill: "var(--primary)" }
+                        Icon { icon: FaShield, width: 18, height: 18, fill: "var(--primary)" }
                     }),
                     label: "Active Validators",
                     value: &format_number(stats.active_validators),
@@ -140,7 +140,7 @@ pub fn ValidatorAnalytics(cx: Scope) -> Element {
                 
                 StatsCard {
                     icon: cx.render(rsx! {
-                        Icon { icon: Wallet, width: 18, height: 18, fill: "var(--primary)" }
+                        Icon { icon: FaWallet, width: 18, height: 18, fill: "var(--primary)" }
                     }),
                     label: "Total Stake",
                     value: &format!("{} SOL", format_number(stats.total_stake)),
@@ -149,7 +149,7 @@ pub fn ValidatorAnalytics(cx: Scope) -> Element {
                 
                 StatsCard {
                     icon: cx.render(rsx! {
-                        Icon { icon: Users, width: 18, height: 18, fill: "var(--primary)" }
+                        Icon { icon: FaUsers, width: 18, height: 18, fill: "var(--primary)" }
                     }),
                     label: "Total Delegators",
                     value: &format_number(stats.total_delegators),
@@ -157,7 +157,7 @@ pub fn ValidatorAnalytics(cx: Scope) -> Element {
                 
                 StatsCard {
                     icon: cx.render(rsx! {
-                        Icon { icon: TrendingUp, width: 18, height: 18, fill: "var(--primary)" }
+                        Icon { icon: FaChartLine, width: 18, height: 18, fill: "var(--primary)" }
                     }),
                     label: "Average APY",
                     value: &format!("{}%", stats.average_apy),

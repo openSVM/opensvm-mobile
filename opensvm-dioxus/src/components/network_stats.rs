@@ -99,7 +99,7 @@ pub fn NetworkStats(cx: Scope<NetworkStatsProps>) -> Element {
                         }
                         div { class: "info-row",
                             span { class: "info-label", "Block Height" }
-                            span { class: "info-value", "{format_number(cx.props.block_height)}" }
+                            span { class: "info-value", "{block_height_str}" }
                         }
                     }
                 }

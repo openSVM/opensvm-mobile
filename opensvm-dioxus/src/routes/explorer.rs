@@ -154,7 +154,7 @@ pub fn ExplorerPage(cx: Scope) -> Element {
                                                 onclick: move |_| handle_block_click(block_number),
                                                 
                                                 span { class: "mono", "Block #{block_number}" }
-                                                Icon { icon: ChevronRight, width: 20, height: 20, fill: "var(--text-secondary)" }
+                                                Icon { icon: FaChevronRight, width: 20, height: 20, fill: "var(--text-secondary)" }
                                             }
                                         }
                                     })

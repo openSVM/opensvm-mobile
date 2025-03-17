@@ -19,7 +19,7 @@ pub fn use_wallet_store() -> Signal<WalletState> {
     });
     
     // Initialize the store with data from local storage if available
-    use_hook(|| {
+    use_effect(|_| {
         if let Some(storage) = get_local_storage() {
             if let Ok(Some(stored_data)) = storage.get_item("wallet-storage") {
                 if let Ok(wallet_state) = serde_json::from_str::<WalletState>(&stored_data) {
@@ -27,6 +27,8 @@ pub fn use_wallet_store() -> Signal<WalletState> {
                 }
             }
         }
+        
+        || {}
     });
     
     WALLET_STORE

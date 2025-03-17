@@ -51,7 +51,7 @@ pub fn CopyButton<'a>(cx: Scope<'a, CopyButtonProps<'a>>) -> Element {
             } else {
                 rsx! {
                     Icon {
-                        icon: Copy,
+                        icon: FaCopy,
                         width: 20,
                         height: 20,
                         fill: "var(--text-secondary)"
