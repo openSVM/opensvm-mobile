@@ -227,6 +227,20 @@ The CI/CD pipeline is defined in `.github/workflows/ci.yml` and includes the fol
 3. **Homebrew Formula**: Updates the Homebrew formula for macOS users
 4. **Android Build**: Builds and optimizes the Android APK
 
+### GitHub Actions Used
+
+The workflow uses the following GitHub Actions:
+
+- `actions/checkout@v4`: Checks out the repository
+- `actions/setup-java@v4`: Sets up JDK for Android builds
+- `actions/cache@v4`: Caches Cargo dependencies for faster builds
+- `actions/upload-artifact@v4`: Uploads build artifacts
+- `actions/download-artifact@v4`: Downloads artifacts for releases
+- `actions-rs/toolchain@v1`: Sets up Rust toolchain
+- `actions-rs/cargo@v1`: Runs Cargo commands
+- `softprops/action-gh-release@v1`: Creates GitHub releases
+- `android-actions/setup-android@v2`: Sets up Android SDK
+
 ### Creating a Release
 
 To create a new release:

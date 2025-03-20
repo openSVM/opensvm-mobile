@@ -55,6 +55,20 @@ This job builds the Android APK and:
 - Uploads the APK as an artifact
 - Adds the APK to the GitHub release (if triggered by a tag)
 
+## GitHub Actions Used
+
+This workflow uses the following GitHub Actions:
+
+- `actions/checkout@v4`: Checks out the repository
+- `actions/setup-java@v4`: Sets up JDK for Android builds
+- `actions/cache@v4`: Caches Cargo dependencies for faster builds
+- `actions/upload-artifact@v4`: Uploads build artifacts
+- `actions/download-artifact@v4`: Downloads artifacts for releases
+- `actions-rs/toolchain@v1`: Sets up Rust toolchain
+- `actions-rs/cargo@v1`: Runs Cargo commands
+- `softprops/action-gh-release@v1`: Creates GitHub releases
+- `android-actions/setup-android@v2`: Sets up Android SDK
+
 ## Usage
 
 ### Regular Development
