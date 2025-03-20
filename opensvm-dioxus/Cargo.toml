@@ -5,11 +5,18 @@ edition = "2021"
 
 [dependencies]
 dioxus = "0.4.0"
-dioxus-web = "0.4.0"
 dioxus-router = "0.4.0"
 dioxus-signals = "0.4.0"
-dioxus-free-icons = { version = "0.7.0", features = ["font-awesome-solid"] }
-wasm-bindgen = "0.2.87"
+dioxus-free-icons = { version = "0.7.0", features = ["font-awesome-solid", "lucide"] }
+log = "0.4.20"
+serde = { version = "1.0.188", features = ["derive"] }
+serde_json = "1.0.107"
+chrono = { version = "0.4.31", features = ["serde"] }
+uuid = { version = "1.4.1", features = ["v4"] }
+
+# Web dependencies
+dioxus-web = { version = "0.4.0", optional = true }
+wasm-bindgen = { version = "0.2.87", optional = true }
 web-sys = { version = "0.3.64", features = [
     "Storage",
     "Window",
@@ -23,12 +30,60 @@ web-sys = { version = "0.3.64", features = [
     "Clipboard",
     "ClipboardEvent",
     "Location",
-] }
-gloo = "0.10.0"
-log = "0.4.20"
-console_log = "1.0.0"
-serde = { version = "1.0.188", features = ["derive"] }
-serde_json = "1.0.107"
-chrono = { version = "0.4.31", features = ["serde"] }
-wasm-bindgen-futures = "0.4.37"
-uuid = { version = "1.4.1", features = ["v4", "js"] }
+], optional = true }
+gloo = { version = "0.10.0", optional = true, features = ["futures"] }
+console_log = { version = "1.0.0", optional = true }
+wasm-bindgen-futures = { version = "0.4.37", optional = true }
+console_error_panic_hook = { version = "0.1.7", optional = true }
+
+# Desktop dependencies
+dioxus-desktop = { version = "0.4.0", optional = true }
+simple_logger = { version = "4.2.0", optional = true }
+num_cpus = { version = "1.16.0", optional = true }
+jemallocator = { version = "0.5.0", optional = true }
+
+# Android dependencies
+dioxus-mobile = { version = "0.4.0", optional = true }
+android_logger = { version = "0.13.1", optional = true }
+
+[features]
+default = ["web"]
+web = [
+    "dioxus-web",
+    "wasm-bindgen",
+    "web-sys",
+    "gloo",
+    "console_log",
+    "wasm-bindgen-futures",
+    "console_error_panic_hook",
+    "uuid/js",
+]
+desktop = [
+    "dioxus-desktop",
+    "simple_logger",
+    "num_cpus",
+]
+android = [
+    "dioxus-mobile",
+    "android_logger",
+]
+jemallocator = ["dep:jemallocator"]
+
+[profile.wasm-release]
+inherits = "release"
+opt-level = 'z'
+lto = true
+codegen-units = 1
+panic = 'abort'
+
+[profile.desktop-release]
+inherits = "release"
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+
+[profile.android-release]
+inherits = "release"
+opt-level = 3
+lto = "thin"
+codegen-units = 1

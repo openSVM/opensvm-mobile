@@ -1,0 +1,13 @@
+# These owners will be the default owners for everything in the repo.
+# Unless a later match takes precedence, they will be requested for
+# review when someone opens a pull request.
+* @openSVM/core-maintainers
+
+# Specific ownership for the Dioxus project
+/opensvm-dioxus/ @openSVM/dioxus-maintainers
+
+# Specific ownership for the React Native project
+/opensvm-reactnative/ @openSVM/reactnative-maintainers
+
+# Workflow files
+/.github/workflows/ @openSVM/devops-team
