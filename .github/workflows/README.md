@@ -1,92 +1,99 @@
 # GitHub Actions Workflows
 
-This directory contains GitHub Actions workflow configurations for the OpenSVM-Dioxus project.
+This directory contains GitHub Actions workflow definitions for automating the build, test, and release processes for the OpenSVM-Dioxus project.
 
-## CI Workflow (`ci.yml`)
+## CI/CD Pipeline (`ci.yml`)
 
-The CI workflow automates building, testing, and releasing the OpenSVM-Dioxus application.
+This workflow handles the continuous integration and continuous deployment process for the OpenSVM-Dioxus project.
 
 ### Triggers
 
-- **Push to main branch**: Runs build and tests
-- **Pull requests to main branch**: Runs build and tests
-- **Release publication**: Runs build, tests, and creates release artifacts
+- **Push** to the `main` branch
+- **Push** of tags matching the pattern `v*` (e.g., `v1.0.0`)
+- **Pull requests** targeting the `main` branch
 
 ### Jobs
 
-1. **build-and-test**: Builds and tests the application on Ubuntu, macOS, and Windows
-2. **build-web**: Builds the optimized web (WASM) version of the application, including WASM size reduction, code minification, and SIMD acceleration
-3. **build-desktop**: Builds optimized desktop versions for Linux, macOS (Intel and Apple Silicon), and Windows with native CPU instruction sets and performance tuning
-4. **build-android**: Builds optimized Android APK with resource management and balanced performance/size optimizations
-5. **create-release**: Collects all artifacts and attaches them to the GitHub release
-6. **homebrew**: Creates and updates a Homebrew formula for easy installation on macOS
+#### 1. Build & Test
 
-### Usage
+This job builds and tests the application across multiple platforms:
 
-#### Regular Development
+- **Web (WASM)** - Built on Ubuntu
+- **Desktop (macOS)** - Built on macOS
+- **Desktop (Windows)** - Built on Windows
+- **Android** - Built on Ubuntu
 
-The CI workflow automatically runs on every push to the main branch and on pull requests to ensure code quality.
+Each platform build includes platform-specific optimizations:
 
-#### Creating a Release
+- **Web**: WASM optimization with `wasm-opt`
+- **Desktop**: Native CPU instructions with `-C target-cpu=native`
+- **Android**: APK optimization with `zipalign` and `apksigner`
 
-To create a new release with binaries:
+#### 2. Release
 
-1. Go to the GitHub repository
-2. Click on "Releases" in the sidebar
-3. Click "Draft a new release"
-4. Create a new tag (e.g., `v0.1.0`)
-5. Fill in the release title and description
-6. Click "Publish release"
+This job is triggered only when a tag matching the pattern `v*` is pushed. It:
 
-The workflow will automatically build all platform binaries and attach them to the release. It will also update the Homebrew formula for macOS users.
+- Downloads all build artifacts
+- Packages them into platform-specific ZIP files
+- Creates a GitHub release with the packaged artifacts
+- Generates release notes automatically
 
-#### Installing via Homebrew
+#### 3. Homebrew Formula Update
 
-After a release is published, macOS users can install the application using Homebrew:
+This job is triggered only when a tag matching the pattern `v*` is pushed. It:
 
-```bash
-# Add the tap (first time only)
-brew tap opensvm/opensvm
+- Creates or updates a Homebrew formula for the macOS release
+- Calculates the SHA256 hash of the macOS release artifact
+- Creates a pull request to update the formula
 
-# Install the application
-brew install opensvm-dioxus
-```
+#### 4. Android Build
 
-### Platform-Specific Optimizations
+This job builds the Android APK and:
 
-The CI workflow applies several platform-specific optimizations to ensure optimal performance:
+- Optimizes the APK with `zipalign`
+- Signs the APK with a debug key
+- Uploads the APK as an artifact
+- Adds the APK to the GitHub release (if triggered by a tag)
 
-#### Web (WASM) Optimizations
+## GitHub Actions Used
 
-- Uses custom `wasm-release` profile optimized for binary size
-- Enables WASM SIMD instructions with `-C target-feature=+atomics,+bulk-memory,+simd128`
-- Applies `wasm-opt -Oz` for additional size optimization
-- Minifies JavaScript with terser for faster loading
+This workflow uses the following GitHub Actions:
 
-#### Desktop Optimizations
+- `actions/checkout@v4`: Checks out the repository
+- `actions/setup-java@v4`: Sets up JDK for Android builds
+- `actions/cache@v4`: Caches Cargo dependencies for faster builds
+- `actions/upload-artifact@v4`: Uploads build artifacts
+- `actions/download-artifact@v4`: Downloads artifacts for releases
+- `actions-rs/toolchain@v1`: Sets up Rust toolchain
+- `actions-rs/cargo@v1`: Runs Cargo commands
+- `softprops/action-gh-release@v1`: Creates GitHub releases
+- `android-actions/setup-android@v2`: Sets up Android SDK
 
-- Uses `-C target-cpu=native` to utilize all available CPU features
-- Applies fat LTO for maximum runtime performance
-- Configures thread pool size based on available CPU cores
-- Optimizes memory allocator settings for desktop environments
+## Usage
 
-#### Android Optimizations
+### Regular Development
 
-- Uses thin LTO for balanced performance and APK size
-- Optimizes APKs with zipalign for improved runtime memory usage
-- Automatically signs APKs for installation
-- Limits background threads to conserve battery life
+The CI pipeline will automatically run on all pull requests to validate changes.
 
-### Customization
+### Creating a Release
 
-To modify the CI workflow:
+To create a new release:
+
+1. Create and push a new tag following semantic versioning:
+   ```bash
+   git tag v1.0.0
+   git push origin v1.0.0
+   ```
+
+2. The workflow will automatically:
+   - Build all platform versions
+   - Create a GitHub release with all artifacts
+   - Update the Homebrew formula
+
+### Customizing the Workflow
+
+To modify the workflow:
 
 1. Edit the `.github/workflows/ci.yml` file
 2. Commit and push your changes
 3. The updated workflow will be used for subsequent runs
-
-To modify platform-specific optimizations:
-
-1. Edit `opensvm-dioxus/src/platform_optimizations.rs` for runtime optimizations
-2. Edit `opensvm-dioxus/Cargo.toml` for compile-time optimizations
-3. Update the appropriate job in the CI workflow for build-time optimizations

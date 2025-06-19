@@ -1,62 +1,74 @@
-//! OpenSVM Dioxus - A cross-platform Solana blockchain explorer and wallet manager
-//! 
-//! This is the main entry point for the application.
-
-use dioxus::prelude::*;
-
+// Import necessary modules
 mod app;
-mod components;
-mod constants;
 mod routes;
+mod components;
 mod stores;
+mod constants;
 mod utils;
-
-/// Platform-specific optimizations module
 mod platform_optimizations;
 
+use app::App;
+use dioxus::prelude::*;
+
+#[cfg(feature = "web")]
 fn main() {
-    // Initialize logging based on platform
-    #[cfg(feature = "web")]
-    {
-        console_log::init_with_level(log::Level::Debug).expect("Failed to initialize logger");
-    }
+    // Initialize logger for web
+    use log::Level;
+    console_log::init_with_level(Level::Debug).expect("Failed to initialize logger");
     
-    #[cfg(any(feature = "desktop", feature = "android"))]
-    {
-        env_logger::init();
-    }
-
     // Apply platform-specific optimizations
-    platform_optimizations::apply_optimizations();
-
-    // Launch the application with platform-specific settings
-    #[cfg(feature = "web")]
-    {
-        let config = dioxus_web::Config::new()
-            .with_web_optimization_mode(dioxus_web::WebOptimizationMode::Compressed);
-        dioxus_web::launch_with_props(app::App, (), config);
-    }
-
-    #[cfg(feature = "desktop")]
-    {
-        use dioxus_desktop::{Config, WindowBuilder};
-        
-        let window = WindowBuilder::new()
-            .with_title("OpenSVM Dioxus")
-            .with_maximized(false)
-            .with_inner_size(dioxus_desktop::LogicalSize::new(1200, 800))
-            .with_min_inner_size(dioxus_desktop::LogicalSize::new(800, 600));
-        
-        let config = Config::new()
-            .with_window(window)
-            .with_disable_context_menu(false)
-            .with_permanent_window_state(false);  // For resizable windows
-        
-        dioxus_desktop::launch_with_props(app::App, (), config);
-    }
+    platform_optimizations::initialize();
     
-    #[cfg(feature = "android")]
-    {
-        dioxus_mobile::launch_with_props(app::App, ());
-    }
+    // Launch the Dioxus app in a browser
+    dioxus_web::launch(App);
+}
+
+#[cfg(feature = "desktop")]
+fn main() {
+    // Initialize logger for desktop
+    use dioxus_desktop::tao::menu::{MenuBar, MenuItem};
+    use dioxus_desktop::{Config, LogicalSize, WindowBuilder};
+    use log::LevelFilter;
+    
+    // Set up desktop logger
+    simple_logger::SimpleLogger::new()
+        .with_level(LevelFilter::Debug)
+        .init()
+        .expect("Failed to initialize logger");
+    
+    // Apply platform-specific optimizations
+    platform_optimizations::initialize();
+    
+    // Create menu bar
+    let mut menu = MenuBar::new();
+    let mut file_menu = MenuBar::new();
+    file_menu.add_item(MenuItem::new("Quit", true, None));
+    menu.add_submenu("File", true, file_menu);
+    
+    // Configure window
+    let window = WindowBuilder::new()
+        .with_title("OpenSVM Dioxus")
+        .with_inner_size(LogicalSize::new(1024.0, 768.0));
+    
+    // Launch desktop app
+    dioxus_desktop::launch_cfg(
+        App,
+        Config::new().with_window(window).with_menu(menu),
+    );
+}
+
+#[cfg(feature = "android")]
+fn main() {
+    // Initialize logger for Android
+    android_logger::init_once(
+        android_logger::Config::default()
+            .with_min_level(log::Level::Debug)
+            .with_tag("opensvm-dioxus"),
+    );
+    
+    // Apply platform-specific optimizations
+    platform_optimizations::initialize();
+    
+    // Launch Android app
+    dioxus_mobile::launch(App);
 }
