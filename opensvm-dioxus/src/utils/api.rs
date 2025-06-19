@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-// Solana RPC endpoint - using public endpoint for now
+// Solana RPC endpoint - using public endpoint
 const SOLANA_RPC_URL: &str = "https://api.mainnet-beta.solana.com";
 
 /// Standard JSON-RPC request structure
@@ -64,31 +64,6 @@ pub struct TransactionSignature {
     pub confirmation_status: Option<String>,
 }
 
-/// Block information
-#[derive(Deserialize, Debug, Clone)]
-pub struct BlockInfo {
-    pub block_height: Option<u64>,
-    pub block_time: Option<i64>,
-    pub blockhash: String,
-    pub parent_slot: u64,
-    pub previous_blockhash: String,
-    pub transactions: Vec<Value>,
-}
-
-/// Validator information
-#[derive(Deserialize, Debug, Clone)]
-pub struct ValidatorInfo {
-    pub pubkey: String,
-    pub vote_account: String,
-    pub activated_stake: u64,
-    pub last_vote: u64,
-    pub root_slot: u64,
-    pub credits: u64,
-    pub epoch_vote_account: bool,
-    pub epoch_credits: Vec<(u64, u64, u64)>,
-    pub commission: u8,
-}
-
 /// Supply information
 #[derive(Deserialize, Debug, Clone)]
 pub struct SupplyInfo {
@@ -116,12 +91,14 @@ pub struct NetworkStats {
     pub avg_slot_time: f64,
 }
 
-/// Generic API client for making requests
+/// Generic API client for making requests (desktop/mobile)
+#[cfg(feature = "desktop")]
 pub struct SolanaApiClient {
     client: reqwest::Client,
     base_url: String,
 }
 
+#[cfg(feature = "desktop")]
 impl SolanaApiClient {
     pub fn new() -> Self {
         Self {
@@ -172,101 +149,34 @@ impl SolanaApiClient {
         Ok(response.value)
     }
 
-    /// Get transaction signatures for an address
-    pub async fn get_signatures_for_address(&self, address: &str, limit: usize) -> Result<Vec<TransactionSignature>, Box<dyn std::error::Error>> {
-        let params = vec![
-            Value::String(address.to_string()),
-            serde_json::json!({
-                "limit": limit,
-                "commitment": "confirmed"
-            })
-        ];
-
-        self.make_request("getSignaturesForAddress", params).await
-    }
-
-    /// Get recent performance samples  
-    pub async fn get_recent_performance_samples(&self, limit: usize) -> Result<Vec<Value>, Box<dyn std::error::Error>> {
-        let params = vec![Value::Number(limit.into())];
-        self.make_request("getRecentPerformanceSamples", params).await
-    }
-
-    /// Get supply information
-    pub async fn get_supply(&self) -> Result<SupplyInfo, Box<dyn std::error::Error>> {
-        let params = vec![serde_json::json!({
-            "commitment": "confirmed"
-        })];
-
-        let response: SupplyResponse = self.make_request("getSupply", params).await?;
-        Ok(response.value)
-    }
-
-    /// Get epoch information
-    pub async fn get_epoch_info(&self) -> Result<Value, Box<dyn std::error::Error>> {
-        self.make_request("getEpochInfo", vec![]).await
-    }
-
-    /// Get current slot
-    pub async fn get_slot(&self) -> Result<u64, Box<dyn std::error::Error>> {
-        self.make_request("getSlot", vec![]).await
-    }
-
-    /// Get block production information
-    pub async fn get_block_production(&self) -> Result<Value, Box<dyn std::error::Error>> {
-        self.make_request("getBlockProduction", vec![]).await
-    }
-
-    /// Get vote accounts (validators)
-    pub async fn get_vote_accounts(&self) -> Result<Value, Box<dyn std::error::Error>> {
-        self.make_request("getVoteAccounts", vec![]).await
-    }
-
-    /// Get block information
-    pub async fn get_block(&self, slot: u64) -> Result<BlockInfo, Box<dyn std::error::Error>> {
-        let params = vec![
-            Value::Number(slot.into()),
-            serde_json::json!({
-                "encoding": "json",
-                "transactionDetails": "signatures",
-                "commitment": "confirmed"
-            })
-        ];
-
-        self.make_request("getBlock", params).await
-    }
-
     /// Get network stats (aggregated information)
     pub async fn get_network_stats(&self) -> Result<NetworkStats, Box<dyn std::error::Error>> {
         // Get supply info
-        let supply = self.get_supply().await?;
+        let params = vec![serde_json::json!({
+            "commitment": "confirmed"
+        })];
+        let supply: SupplyResponse = self.make_request("getSupply", params).await?;
         
         // Get epoch info
-        let epoch_info: Value = self.get_epoch_info().await?;
+        let epoch_info: Value = self.make_request("getEpochInfo", vec![]).await?;
         
         // Get current slot
-        let current_slot = self.get_slot().await?;
+        let current_slot: u64 = self.make_request("getSlot", vec![]).await?;
         
         // Get vote accounts to count validators
-        let vote_accounts: Value = self.get_vote_accounts().await?;
+        let vote_accounts: Value = self.make_request("getVoteAccounts", vec![]).await?;
         let validator_count = vote_accounts["current"]
             .as_array()
             .map(|arr| arr.len())
             .unwrap_or(0);
 
-        // Get performance samples for avg slot time
-        let performance_samples: Vec<Value> = self.get_recent_performance_samples(20).await?;
-        let avg_slot_time = performance_samples
-            .iter()
-            .filter_map(|sample| sample["samplePeriodSecs"].as_f64())
-            .sum::<f64>() / performance_samples.len() as f64;
-
         Ok(NetworkStats {
-            total_supply: supply.total,
-            circulating_supply: supply.circulating,
+            total_supply: supply.value.total,
+            circulating_supply: supply.value.circulating,
             current_slot,
             epoch: epoch_info["epoch"].as_u64().unwrap_or(0),
             validator_count,
-            avg_slot_time,
+            avg_slot_time: 0.4, // Default value
         })
     }
 }
@@ -278,6 +188,7 @@ pub mod web {
     use wasm_bindgen::prelude::*;
     use wasm_bindgen_futures::JsFuture;
     use web_sys::{Request, RequestInit, RequestMode, Response};
+    use serde_wasm_bindgen::from_value;
 
     pub async fn fetch_account_info(address: &str) -> Result<Option<AccountInfo>, JsValue> {
         let request_body = serde_json::json!({
@@ -294,9 +205,9 @@ pub mod web {
         });
 
         let mut opts = RequestInit::new();
-        opts.method("POST");
-        opts.mode(RequestMode::Cors);
-        opts.body(Some(&JsValue::from_str(&request_body.to_string())));
+        opts.set_method("POST");
+        opts.set_mode(RequestMode::Cors);
+        opts.set_body(&JsValue::from_str(&request_body.to_string()));
 
         let request = Request::new_with_str_and_init(SOLANA_RPC_URL, &opts)?;
         request.headers().set("Content-Type", "application/json")?;
@@ -306,7 +217,7 @@ pub mod web {
         let resp: Response = resp_value.dyn_into().unwrap();
 
         let json = JsFuture::from(resp.json()?).await?;
-        let response: JsonRpcResponse<AccountResponse> = json.into_serde().unwrap();
+        let response: JsonRpcResponse<AccountResponse> = from_value(json).unwrap();
 
         if let Some(error) = response.error {
             return Err(JsValue::from_str(&format!("RPC Error: {}", error.message)));
@@ -316,17 +227,44 @@ pub mod web {
     }
 
     pub async fn fetch_network_stats() -> Result<NetworkStats, JsValue> {
-        // For web, we'll implement a simplified version
-        // In a real implementation, you'd make multiple parallel requests
-        
-        // Mock data for now - in production, make actual API calls
-        Ok(NetworkStats {
-            total_supply: 500_000_000_000_000_000, // 500M SOL in lamports
-            circulating_supply: 400_000_000_000_000_000, // 400M SOL
-            current_slot: 250_000_000,
-            epoch: 500,
-            validator_count: 1500,
-            avg_slot_time: 0.4,
-        })
+        // For web, make a simplified request to get supply
+        let request_body = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getSupply",
+            "params": [{"commitment": "confirmed"}]
+        });
+
+        let mut opts = RequestInit::new();
+        opts.set_method("POST");
+        opts.set_mode(RequestMode::Cors);
+        opts.set_body(&JsValue::from_str(&request_body.to_string()));
+
+        let request = Request::new_with_str_and_init(SOLANA_RPC_URL, &opts)?;
+        request.headers().set("Content-Type", "application/json")?;
+
+        let window = web_sys::window().unwrap();
+        let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
+        let resp: Response = resp_value.dyn_into().unwrap();
+
+        let json = JsFuture::from(resp.json()?).await?;
+        let response: JsonRpcResponse<SupplyResponse> = from_value(json).unwrap();
+
+        if let Some(error) = response.error {
+            return Err(JsValue::from_str(&format!("RPC Error: {}", error.message)));
+        }
+
+        if let Some(supply_response) = response.result {
+            Ok(NetworkStats {
+                total_supply: supply_response.value.total,
+                circulating_supply: supply_response.value.circulating,
+                current_slot: 250_000_000, // Mock value for now
+                epoch: 500,
+                validator_count: 1500,
+                avg_slot_time: 0.4,
+            })
+        } else {
+            Err(JsValue::from_str("No supply data returned"))
+        }
     }
 }

@@ -8,7 +8,7 @@ use crate::routes::{
     wallet::WalletPage,
     ai::AIPage,
     transaction::TransactionPage,
-    account::AccountPage,
+    account::{AccountPage, AccountPageProps},
     not_found::NotFoundPage,
 };
 
@@ -33,11 +33,30 @@ pub enum Route {
     #[route("/transaction/:id")]
     Transaction { id: String },
     
-    #[route("/account/:id")]
-    Account { id: String },
+    #[route("/account/:address")]
+    Account { address: String },
     
     #[route("/:..segments")]
     NotFound { segments: Vec<String> },
+}
+
+impl Route {
+    pub fn render(&self, cx: Scope) -> Element {
+        match self {
+            Route::Explorer {} => cx.render(rsx! { ExplorerPage {} }),
+            Route::Validators {} => cx.render(rsx! { ValidatorsPage {} }),
+            Route::Solanow {} => cx.render(rsx! { SolanowPage {} }),
+            Route::Wallet {} => cx.render(rsx! { WalletPage {} }),
+            Route::AI {} => cx.render(rsx! { AIPage {} }),
+            Route::Transaction { id } => cx.render(rsx! { TransactionPage { id: id.clone() } }),
+            Route::Account { address } => cx.render(rsx! { 
+                AccountPage { 
+                    address: address.clone() 
+                } 
+            }),
+            Route::NotFound { segments } => cx.render(rsx! { NotFoundPage { segments: segments.clone() } }),
+        }
+    }
 }
 
 // Main App component
