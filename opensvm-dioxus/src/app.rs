@@ -8,15 +8,16 @@ use crate::routes::{
     wallet::WalletPage,
     ai::AIPage,
     transaction::TransactionPage,
-    account::{AccountPage, AccountPageProps},
+    account::AccountPage,
     not_found::NotFoundPage,
 };
 
 // Define the routes for our app
 #[derive(Routable, Clone)]
-pub enum Route {
+#[rustfmt::skip]
+enum Route {
     #[route("/")]
-    Explorer {},
+    Home {},
     
     #[route("/validators")]
     Validators {},
@@ -36,27 +37,53 @@ pub enum Route {
     #[route("/account/:address")]
     Account { address: String },
     
-    #[route("/:..segments")]
-    NotFound { segments: Vec<String> },
+    #[route("/:..route")]
+    NotFound { route: Vec<String> },
 }
 
-impl Route {
-    pub fn render(&self, cx: Scope) -> Element {
-        match self {
-            Route::Explorer {} => cx.render(rsx! { ExplorerPage {} }),
-            Route::Validators {} => cx.render(rsx! { ValidatorsPage {} }),
-            Route::Solanow {} => cx.render(rsx! { SolanowPage {} }),
-            Route::Wallet {} => cx.render(rsx! { WalletPage {} }),
-            Route::AI {} => cx.render(rsx! { AIPage {} }),
-            Route::Transaction { id } => cx.render(rsx! { TransactionPage { id: id.clone() } }),
-            Route::Account { address } => cx.render(rsx! { 
-                AccountPage { 
-                    address: address.clone() 
-                } 
-            }),
-            Route::NotFound { segments } => cx.render(rsx! { NotFoundPage { segments: segments.clone() } }),
-        }
-    }
+// Route component implementations
+#[component]
+fn Home(cx: Scope) -> Element {
+    cx.render(rsx! { ExplorerPage {} })
+}
+
+#[component]
+fn Validators(cx: Scope) -> Element {
+    cx.render(rsx! { ValidatorsPage {} })
+}
+
+#[component]
+fn Solanow(cx: Scope) -> Element {
+    cx.render(rsx! { SolanowPage {} })
+}
+
+#[component]
+fn Wallet(cx: Scope) -> Element {
+    cx.render(rsx! { WalletPage {} })
+}
+
+#[component(no_case_check)]
+fn AI(cx: Scope) -> Element {
+    cx.render(rsx! { AIPage {} })
+}
+
+#[component]
+fn Transaction(cx: Scope, id: String) -> Element {
+    cx.render(rsx! { TransactionPage {} })
+}
+
+#[component]
+fn Account(cx: Scope, address: String) -> Element {
+    cx.render(rsx! { 
+        AccountPage { 
+            address: address.clone() 
+        } 
+    })
+}
+
+#[component]
+fn NotFound(cx: Scope, route: Vec<String>) -> Element {
+    cx.render(rsx! { NotFoundPage {} })
 }
 
 // Main App component

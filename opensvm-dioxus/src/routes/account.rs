@@ -2,7 +2,9 @@
 
 use dioxus::prelude::*;
 use dioxus_router::prelude::*;
-use crate::utils::api::{AccountInfo, TransactionSignature, SolanaApiClient};
+use crate::utils::api::{AccountInfo, TransactionSignature};
+#[cfg(feature = "desktop")]
+use crate::utils::api::SolanaApiClient;
 
 #[derive(Props, PartialEq)]
 pub struct AccountPageProps {
@@ -201,7 +203,6 @@ pub fn AccountPage(cx: Scope<AccountPageProps>) -> Element {
                                                     code { "{transaction.signature[..20]}..." }
                                                     if let Some(block_time) = transaction.block_time {
                                                         span { class: "transaction-time",
-                                                            // Format timestamp
                                                             "({block_time})"
                                                         }
                                                     }
