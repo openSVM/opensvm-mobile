@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "web")]
 use web_sys::Storage;
 
 // Define the theme options
@@ -28,10 +30,13 @@ impl Default for ThemeState {
 pub fn use_theme_store(cx: &ScopeState) -> &UseState<ThemeState> {
     let theme_state = use_state(cx, || {
         // Try to load from local storage
-        if let Some(storage) = get_local_storage() {
-            if let Ok(Some(stored_data)) = storage.get_item("theme-storage") {
-                if let Ok(theme_state) = serde_json::from_str::<ThemeState>(&stored_data) {
-                    return theme_state;
+        #[cfg(feature = "web")]
+        {
+            if let Some(storage) = get_local_storage() {
+                if let Ok(Some(stored_data)) = storage.get_item("theme-storage") {
+                    if let Ok(theme_state) = serde_json::from_str::<ThemeState>(&stored_data) {
+                        return theme_state;
+                    }
                 }
             }
         }
@@ -49,13 +54,14 @@ pub fn use_theme_store(cx: &ScopeState) -> &UseState<ThemeState> {
 }
 
 // Helper function to get local storage
+#[cfg(feature = "web")]
 fn get_local_storage() -> Option<Storage> {
-    #[cfg(feature = "web")]
-    {
-        let window = web_sys::window()?;
-        window.local_storage().ok()?
-    }
-    #[cfg(not(feature = "web"))]
+    let window = web_sys::window()?;
+    window.local_storage().ok()?
+}
+
+#[cfg(not(feature = "web"))]
+fn get_local_storage() -> Option<()> {
     None
 }
 

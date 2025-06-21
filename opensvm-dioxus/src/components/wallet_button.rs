@@ -8,16 +8,16 @@ use crate::app::Route;
 
 #[component]
 pub fn WalletButton(cx: Scope) -> Element {
-    let wallet = use_wallet_store();
+    let wallet = use_wallet_store(cx);
     let navigator = use_navigator(cx);
     
     let handle_wallet_click = move |_| {
-        if wallet.read().is_connected {
+        if wallet.get().is_connected {
             // If already connected, navigate to wallet page
             navigator.push(Route::Wallet {});
         } else {
             // If not connected, connect wallet
-            connect_wallet(wallet.clone());
+            connect_wallet(wallet);
             navigator.push(Route::Wallet {});
         }
     };
@@ -25,19 +25,19 @@ pub fn WalletButton(cx: Scope) -> Element {
     cx.render(rsx! {
         button {
             class: "btn",
-            class: if wallet.read().is_connected { "btn-secondary" } else { "btn-primary" },
+            class: if wallet.get().is_connected { "btn-secondary" } else { "btn-primary" },
             onclick: handle_wallet_click,
             
             Icon {
-                icon: FaWallet,
+                icon: Wallet,
                 width: 16,
                 height: 16,
-                fill: if wallet.read().is_connected { "var(--text)" } else { "white" }
+                fill: if wallet.get().is_connected { "var(--text)" } else { "white" }
             }
             
             span { 
                 style: "margin-left: 8px;",
-                if wallet.read().is_connected { "Wallet" } else { "Connect Wallet" }
+                if wallet.get().is_connected { "Wallet" } else { "Connect Wallet" }
             }
         }
     })

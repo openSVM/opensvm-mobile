@@ -33,7 +33,7 @@ pub fn StatsCard<'a>(cx: Scope<'a, StatsCardProps<'a>>) -> Element {
 }
 
 // Network stats component
-#[derive(Props)]
+#[derive(Props, PartialEq)]
 pub struct NetworkStatsProps {
     pub blocks_processed: u64,
     pub active_validators: u64,

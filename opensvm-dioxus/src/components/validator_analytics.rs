@@ -140,7 +140,7 @@ pub fn ValidatorAnalytics(cx: Scope) -> Element {
                 
                 StatsCard {
                     icon: cx.render(rsx! {
-                        Icon { icon: FaWallet, width: 18, height: 18, fill: "var(--primary)" }
+                        Icon { icon: Wallet, width: 18, height: 18, fill: "var(--primary)" }
                     }),
                     label: "Total Stake",
                     value: &format!("{} SOL", format_number(stats.total_stake)),
