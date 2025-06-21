@@ -64,6 +64,65 @@ pub struct TransactionSignature {
     pub confirmation_status: Option<String>,
 }
 
+/// Detailed transaction information
+#[derive(Deserialize, Debug, Clone, PartialEq)]
+pub struct TransactionDetails {
+    pub slot: Option<u64>,
+    pub transaction: TransactionInfo,
+    pub meta: Option<TransactionMeta>,
+    pub block_time: Option<i64>,
+    pub version: Option<String>,
+}
+
+#[derive(Deserialize, Debug, Clone, PartialEq)]
+pub struct TransactionInfo {
+    pub message: TransactionMessage,
+    pub signatures: Vec<String>,
+}
+
+#[derive(Deserialize, Debug, Clone, PartialEq)]
+pub struct TransactionMessage {
+    pub account_keys: Vec<String>,
+    pub header: MessageHeader,
+    pub instructions: Vec<TransactionInstruction>,
+    pub recent_blockhash: String,
+}
+
+#[derive(Deserialize, Debug, Clone, PartialEq)]
+pub struct MessageHeader {
+    pub num_required_signatures: u8,
+    pub num_readonly_signed_accounts: u8,
+    pub num_readonly_unsigned_accounts: u8,
+}
+
+#[derive(Deserialize, Debug, Clone, PartialEq)]
+pub struct TransactionInstruction {
+    pub accounts: Vec<u8>,
+    pub data: String,
+    pub program_id_index: u8,
+}
+
+#[derive(Deserialize, Debug, Clone, PartialEq)]
+pub struct TransactionMeta {
+    pub err: Option<Value>,
+    pub fee: u64,
+    pub inner_instructions: Option<Vec<Value>>,
+    pub log_messages: Option<Vec<String>>,
+    pub post_balances: Vec<u64>,
+    pub post_token_balances: Option<Vec<Value>>,
+    pub pre_balances: Vec<u64>,
+    pub pre_token_balances: Option<Vec<Value>>,
+    pub rewards: Option<Vec<Value>>,
+    pub status: Option<Value>,
+}
+
+/// Transaction response wrapper
+#[derive(Deserialize, Debug)]
+struct TransactionResponse {
+    context: Context,
+    value: Option<TransactionDetails>,
+}
+
 /// Supply information
 #[derive(Deserialize, Debug, Clone)]
 pub struct SupplyInfo {
@@ -156,6 +215,24 @@ impl SolanaApiClient {
         Ok(response.value)
     }
 
+    /// Get transaction details
+    pub async fn get_transaction(
+        &self,
+        signature: &str,
+    ) -> Result<Option<TransactionDetails>, Box<dyn std::error::Error>> {
+        let params = vec![
+            Value::String(signature.to_string()),
+            serde_json::json!({
+                "encoding": "json",
+                "commitment": "confirmed",
+                "maxSupportedTransactionVersion": 0
+            }),
+        ];
+
+        let response: TransactionResponse = self.make_request("getTransaction", params).await?;
+        Ok(response.value)
+    }
+
     /// Get network stats (aggregated information)
     pub async fn get_network_stats(&self) -> Result<NetworkStats, Box<dyn std::error::Error>> {
         // Get supply info
@@ -225,6 +302,43 @@ pub mod web {
 
         let json = JsFuture::from(resp.json()?).await?;
         let response: JsonRpcResponse<AccountResponse> = from_value(json).unwrap();
+
+        if let Some(error) = response.error {
+            return Err(JsValue::from_str(&format!("RPC Error: {}", error.message)));
+        }
+
+        Ok(response.result.and_then(|r| r.value))
+    }
+
+    pub async fn fetch_transaction(signature: &str) -> Result<Option<TransactionDetails>, JsValue> {
+        let request_body = serde_json::json!({
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "getTransaction",
+            "params": [
+                signature,
+                {
+                    "encoding": "json",
+                    "commitment": "confirmed",
+                    "maxSupportedTransactionVersion": 0
+                }
+            ]
+        });
+
+        let opts = RequestInit::new();
+        opts.set_method("POST");
+        opts.set_mode(RequestMode::Cors);
+        opts.set_body(&JsValue::from_str(&request_body.to_string()));
+
+        let request = Request::new_with_str_and_init(SOLANA_RPC_URL, &opts)?;
+        request.headers().set("Content-Type", "application/json")?;
+
+        let window = web_sys::window().unwrap();
+        let resp_value = JsFuture::from(window.fetch_with_request(&request)).await?;
+        let resp: Response = resp_value.dyn_into().unwrap();
+
+        let json = JsFuture::from(resp.json()?).await?;
+        let response: JsonRpcResponse<TransactionResponse> = from_value(json).unwrap();
 
         if let Some(error) = response.error {
             return Err(JsValue::from_str(&format!("RPC Error: {}", error.message)));

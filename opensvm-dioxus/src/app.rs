@@ -67,8 +67,12 @@ fn AI(cx: Scope) -> Element {
 }
 
 #[component]
-fn Transaction(cx: Scope, #[allow(unused_variables)] id: String) -> Element {
-    cx.render(rsx! { TransactionPage {} })
+fn Transaction(cx: Scope, id: String) -> Element {
+    cx.render(rsx! { 
+        TransactionPage { 
+            transaction_id: id.clone()
+        } 
+    })
 }
 
 #[component]
