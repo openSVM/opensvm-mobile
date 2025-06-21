@@ -71,7 +71,7 @@ pub fn format_number(num: u64) -> String {
     let num_str = num.to_string();
     let mut count = 0;
 
-    for (_i, c) in num_str.chars().rev().enumerate() {
+    for c in num_str.chars().rev() {
         if count == 3 {
             result.push(',');
             count = 0;

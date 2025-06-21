@@ -2,6 +2,7 @@
 
 use crate::utils::api::NetworkStats;
 #[cfg(feature = "desktop")]
+#[allow(unused_imports)]
 use crate::utils::api::SolanaApiClient;
 use dioxus::events::MouseData;
 use dioxus::prelude::*;
@@ -11,7 +12,7 @@ pub fn ExplorerPage(cx: Scope) -> Element {
     let network_stats = use_state(cx, || Option::<NetworkStats>::None);
     let loading = use_state(cx, || true);
     let error = use_state(cx, || Option::<String>::None);
-    let search_input = use_state(cx, || String::new());
+    let search_input = use_state(cx, String::new);
 
     // Load network stats on component mount
     use_effect(cx, (), |_| {
