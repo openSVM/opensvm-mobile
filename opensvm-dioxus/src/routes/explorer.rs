@@ -1,7 +1,7 @@
 //! Explorer page
 
 use dioxus::prelude::*;
-use dioxus::events::MouseData;
+use dioxus::events::{MouseData, KeyboardData};
 use crate::utils::api::NetworkStats;
 #[cfg(feature = "desktop")]
 use crate::utils::api::SolanaApiClient;
@@ -77,7 +77,7 @@ pub fn ExplorerPage(cx: Scope) -> Element {
                             value: "{search_input}",
                             oninput: move |evt| search_input.set(evt.value.clone()),
                             onkeypress: move |evt| {
-                                if evt.data.key() == "Enter" {
+                                if evt.data.key().to_string() == "Enter" {
                                     // Simulate a mouse event for the search handler
                                     let search_term = search_input.get().trim();
                                     if !search_term.is_empty() {

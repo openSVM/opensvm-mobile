@@ -88,13 +88,13 @@ jobs:
         if: ${{ matrix.platform == 'web' }}
         run: |
           cd opensvm-dioxus
-          dioxus build --features web --profile wasm-release --platform web --release
+          dioxus build --platform web --release
 
       - name: Build for Desktop (macOS/Linux)
         if: ${{ matrix.platform == 'desktop' && matrix.os != 'windows-latest' }}
         run: |
           cd opensvm-dioxus
-          RUSTFLAGS="-C target-cpu=native" dioxus build --features desktop --profile desktop-release --platform desktop --release
+          RUSTFLAGS="-C target-cpu=native" dioxus build --platform desktop --release
         shell: bash
 
       - name: Build for Desktop (Windows)
@@ -102,7 +102,7 @@ jobs:
         run: |
           cd opensvm-dioxus
           $env:RUSTFLAGS="-C target-cpu=native"
-          dioxus build --features desktop --profile desktop-release --platform desktop --release
+          dioxus build --platform desktop --release
         shell: pwsh
 
       - name: Run tests
@@ -161,4 +161,143 @@ jobs:
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
-          files: release-assets](#)
+          files: release-assets/*
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  homebrew:
+    name: Update Homebrew Formula
+    needs: release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: opensvm-dioxus-macos-latest-desktop
+          path: macos-artifact
+
+      - name: Create Homebrew Formula
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/opensvm-dioxus-macos.zip"
+
+          # Wait for release to be available
+          sleep 30
+
+          # Calculate SHA256 of the released asset
+          curl -L -o opensvm-dioxus-macos.zip "$DOWNLOAD_URL" || exit 1
+          SHA256=$(shasum -a 256 opensvm-dioxus-macos.zip | awk '{print $1}')
+
+          # Create formula directory if it doesn't exist
+          mkdir -p Formula
+
+          # Create or update formula file
+          cat > Formula/opensvm-dioxus.rb << EOF
+          class OpensvmDioxus < Formula
+            desc "OpenSVM Dioxus application for Solana blockchain ecosystem"
+            homepage "https://github.com/${{ github.repository }}"
+            url "$DOWNLOAD_URL"
+            sha256 "$SHA256"
+            version "$VERSION"
+
+            def install
+              libexec.install Dir["*"]
+              bin.install_symlink libexec/"opensvm-dioxus"
+            end
+          end
+          EOF
+
+          # Create a new branch for the formula update
+          git checkout -b update-homebrew-formula-v$VERSION
+
+          # Commit and push changes
+          git add Formula/opensvm-dioxus.rb
+          git commit -m "Update Homebrew formula to v$VERSION"
+          git push origin update-homebrew-formula-v$VERSION
+
+          # Create pull request using GitHub CLI
+          gh pr create --title "Update Homebrew formula to v$VERSION" --body "Updates the Homebrew formula for opensvm-dioxus to version $VERSION" --base main --head update-homebrew-formula-v$VERSION
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  android-build:
+    name: Build Android
+    runs-on: ubuntu-22.04
+    if: github.event_name == 'push'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          target: aarch64-linux-android
+
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Dioxus CLI
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: dioxus-cli --force
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            opensvm-dioxus/target
+          key: android-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: android-cargo-
+
+      - name: Build for Android
+        run: |
+          cd opensvm-dioxus
+          RUSTFLAGS="-C opt-level=3 -C lto=thin" dioxus build --platform android --release
+
+      - name: Optimize APK
+        run: |
+          cd opensvm-dioxus/dist/android
+          if [ -f "app-release-unsigned.apk" ]; then
+            $ANDROID_HOME/build-tools/33.0.0/zipalign -v -p 4 app-release-unsigned.apk app-release-aligned.apk
+            # Create a debug keystore for signing (in production, use proper keystore)
+            keytool -genkey -v -keystore debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Debug,O=Android,C=US"
+            $ANDROID_HOME/build-tools/33.0.0/apksigner sign --ks debug.keystore --ks-pass pass:android --key-pass pass:android --out opensvm-dioxus.apk app-release-aligned.apk
+          fi
+
+      - name: Upload Android artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opensvm-dioxus-android
+          path: opensvm-dioxus/dist/android/opensvm-dioxus.apk
+
+      - name: Add Android APK to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: opensvm-dioxus/dist/android/opensvm-dioxus.apk
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
