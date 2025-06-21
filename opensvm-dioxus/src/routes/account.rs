@@ -1,10 +1,9 @@
 //! Account page
 
-use dioxus::prelude::*;
-use dioxus_router::prelude::*;
-use crate::utils::api::{AccountInfo, TransactionSignature};
 #[cfg(feature = "desktop")]
 use crate::utils::api::SolanaApiClient;
+use crate::utils::api::{AccountInfo, TransactionSignature};
+use dioxus::prelude::*;
 
 #[derive(Props, PartialEq)]
 pub struct AccountPageProps {
@@ -21,15 +20,15 @@ pub fn AccountPage(cx: Scope<AccountPageProps>) -> Element {
     // Load account data on mount or when address changes
     use_effect(cx, (&cx.props.address,), |(address,)| {
         let account_info = account_info.to_owned();
-        let transactions = transactions.to_owned();
+        let _transactions = transactions.to_owned();
         let loading = loading.to_owned();
         let error = error.to_owned();
         let address = address.clone();
-        
+
         async move {
             loading.set(true);
             error.set(None);
-            
+
             #[cfg(feature = "web")]
             {
                 match crate::utils::api::web::fetch_account_info(&address).await {
@@ -43,16 +42,16 @@ pub fn AccountPage(cx: Scope<AccountPageProps>) -> Element {
                     }
                 }
             }
-            
+
             #[cfg(not(feature = "web"))]
             {
                 let client = SolanaApiClient::new();
-                
+
                 // Fetch account info
                 match client.get_account_info(&address).await {
                     Ok(info) => {
                         account_info.set(info);
-                        
+
                         // Fetch recent transactions
                         match client.get_signatures_for_address(&address, 10).await {
                             Ok(sigs) => {
@@ -62,7 +61,7 @@ pub fn AccountPage(cx: Scope<AccountPageProps>) -> Element {
                                 log::warn!("Failed to load transactions: {}", e);
                             }
                         }
-                        
+
                         loading.set(false);
                     }
                     Err(e) => {
@@ -74,7 +73,8 @@ pub fn AccountPage(cx: Scope<AccountPageProps>) -> Element {
         }
     });
 
-    let sol_balance = account_info.get()
+    let sol_balance = account_info
+        .get()
         .as_ref()
         .map(|info| info.lamports as f64 / 1_000_000_000.0)
         .unwrap_or(0.0);
@@ -87,7 +87,7 @@ pub fn AccountPage(cx: Scope<AccountPageProps>) -> Element {
                 div { class: "account-address",
                     span { class: "address-label", "Address: " }
                     code { class: "address-value", "{cx.props.address}" }
-                    button { 
+                            button {
                         class: "copy-button",
                         onclick: move |_| {
                             // Copy to clipboard functionality would go here
@@ -111,7 +111,7 @@ pub fn AccountPage(cx: Scope<AccountPageProps>) -> Element {
                         div { class: "error-message",
                             h3 { "Error Loading Account" }
                             p { "{err}" }
-                            button { 
+                            button {
                                 class: "retry-button",
                                 onclick: move |_| {
                                     // Trigger reload
@@ -137,13 +137,13 @@ pub fn AccountPage(cx: Scope<AccountPageProps>) -> Element {
                                 div { class: "overview-card",
                                     h3 { "Owner" }
                                     code { class: "owner-address", 
-                                        "{account_info.get().map(|info| info.owner.as_str()).unwrap_or(\"Unknown\")}" 
+                                        "{account_info.get().as_ref().map(|info| info.owner.as_str()).unwrap_or(\"Unknown\")}" 
                                     }
                                 }
                                 div { class: "overview-card",
                                     h3 { "Executable" }
                                     p { class: "executable-status",
-                                        if account_info.get().map(|info| info.executable).unwrap_or(false) {
+                                        if account_info.get().as_ref().map(|info| info.executable).unwrap_or(false) {
                                             "✅ Yes"
                                         } else {
                                             "❌ No"
@@ -152,13 +152,13 @@ pub fn AccountPage(cx: Scope<AccountPageProps>) -> Element {
                                 }
                                 div { class: "overview-card",
                                     h3 { "Rent Epoch" }
-                                    p { "{account_info.get().map(|info| info.rent_epoch).unwrap_or(0)}" }
+                                    p { "{account_info.get().as_ref().map(|info| info.rent_epoch).unwrap_or(0)}" }
                                 }
                             }
                         }
 
                         // Account data section
-                        if let Some(info) = account_info.get() {
+                        if let Some(info) = account_info.get().as_ref() {
                             if !info.data.is_empty() {
                                 rsx! {
                                     div { class: "account-data-section",

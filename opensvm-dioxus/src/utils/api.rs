@@ -108,7 +108,11 @@ impl SolanaApiClient {
     }
 
     /// Make a JSON-RPC request
-    async fn make_request<T>(&self, method: &str, params: Vec<Value>) -> Result<T, Box<dyn std::error::Error>>
+    async fn make_request<T>(
+        &self,
+        method: &str,
+        params: Vec<Value>,
+    ) -> Result<T, Box<dyn std::error::Error>>
     where
         T: for<'de> Deserialize<'de>,
     {
@@ -136,13 +140,16 @@ impl SolanaApiClient {
     }
 
     /// Get account information
-    pub async fn get_account_info(&self, address: &str) -> Result<Option<AccountInfo>, Box<dyn std::error::Error>> {
+    pub async fn get_account_info(
+        &self,
+        address: &str,
+    ) -> Result<Option<AccountInfo>, Box<dyn std::error::Error>> {
         let params = vec![
             Value::String(address.to_string()),
             serde_json::json!({
                 "encoding": "base64",
                 "commitment": "confirmed"
-            })
+            }),
         ];
 
         let response: AccountResponse = self.make_request("getAccountInfo", params).await?;
@@ -156,13 +163,13 @@ impl SolanaApiClient {
             "commitment": "confirmed"
         })];
         let supply: SupplyResponse = self.make_request("getSupply", params).await?;
-        
+
         // Get epoch info
         let epoch_info: Value = self.make_request("getEpochInfo", vec![]).await?;
-        
+
         // Get current slot
         let current_slot: u64 = self.make_request("getSlot", vec![]).await?;
-        
+
         // Get vote accounts to count validators
         let vote_accounts: Value = self.make_request("getVoteAccounts", vec![]).await?;
         let validator_count = vote_accounts["current"]
@@ -185,10 +192,10 @@ impl SolanaApiClient {
 #[cfg(feature = "web")]
 pub mod web {
     use super::*;
+    use serde_wasm_bindgen::from_value;
     use wasm_bindgen::prelude::*;
     use wasm_bindgen_futures::JsFuture;
     use web_sys::{Request, RequestInit, RequestMode, Response};
-    use serde_wasm_bindgen::from_value;
 
     pub async fn fetch_account_info(address: &str) -> Result<Option<AccountInfo>, JsValue> {
         let request_body = serde_json::json!({
@@ -204,7 +211,7 @@ pub mod web {
             ]
         });
 
-        let mut opts = RequestInit::new();
+        let opts = RequestInit::new();
         opts.set_method("POST");
         opts.set_mode(RequestMode::Cors);
         opts.set_body(&JsValue::from_str(&request_body.to_string()));
@@ -235,7 +242,7 @@ pub mod web {
             "params": [{"commitment": "confirmed"}]
         });
 
-        let mut opts = RequestInit::new();
+        let opts = RequestInit::new();
         opts.set_method("POST");
         opts.set_mode(RequestMode::Cors);
         opts.set_body(&JsValue::from_str(&request_body.to_string()));

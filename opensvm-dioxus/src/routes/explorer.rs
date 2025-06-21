@@ -1,10 +1,10 @@
 //! Explorer page
 
-use dioxus::prelude::*;
-use dioxus::events::{MouseData, KeyboardData};
 use crate::utils::api::NetworkStats;
 #[cfg(feature = "desktop")]
 use crate::utils::api::SolanaApiClient;
+use dioxus::events::MouseData;
+use dioxus::prelude::*;
 
 /// Explorer page component
 pub fn ExplorerPage(cx: Scope) -> Element {
@@ -18,7 +18,7 @@ pub fn ExplorerPage(cx: Scope) -> Element {
         let network_stats = network_stats.to_owned();
         let loading = loading.to_owned();
         let error = error.to_owned();
-        
+
         async move {
             #[cfg(feature = "web")]
             {
@@ -33,7 +33,7 @@ pub fn ExplorerPage(cx: Scope) -> Element {
                     }
                 }
             }
-            
+
             #[cfg(not(feature = "web"))]
             {
                 let client = SolanaApiClient::new();
@@ -64,10 +64,10 @@ pub fn ExplorerPage(cx: Scope) -> Element {
             // Header section
             div { class: "header-section",
                 h1 { class: "page-title", "Solana Explorer" }
-                p { class: "page-description", 
-                    "Explore the Solana blockchain with real-time data and AI assistance" 
+                p { class: "page-description",
+                    "Explore the Solana blockchain with real-time data and AI assistance"
                 }
-                
+
                 // Search bar
                 div { class: "search-section",
                     div { class: "search-container",
@@ -98,7 +98,7 @@ pub fn ExplorerPage(cx: Scope) -> Element {
             // Network stats section
             div { class: "network-stats-section",
                 h2 { "Network Overview" }
-                
+
                 if **loading {
                     rsx! {
                         div { class: "loading",
@@ -116,14 +116,14 @@ pub fn ExplorerPage(cx: Scope) -> Element {
                         div { class: "stats-grid",
                             div { class: "stat-card",
                                 h3 { "Total Supply" }
-                                p { class: "stat-value", 
-                                    "{stats.total_supply / 1_000_000_000} SOL" 
+                                p { class: "stat-value",
+                                    "{stats.total_supply / 1_000_000_000} SOL"
                                 }
                             }
                             div { class: "stat-card",
                                 h3 { "Circulating Supply" }
-                                p { class: "stat-value", 
-                                    "{stats.circulating_supply / 1_000_000_000} SOL" 
+                                p { class: "stat-value",
+                                    "{stats.circulating_supply / 1_000_000_000} SOL"
                                 }
                             }
                             div { class: "stat-card",

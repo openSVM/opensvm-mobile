@@ -35,12 +35,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          target: ${{ matrix.target }}
+          targets: ${{ matrix.target }}
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -52,49 +49,31 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
-      - name: Install Dioxus CLI
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: dioxus-cli --force
+      - name: Add WASM target
+        if: ${{ matrix.platform == 'web' }}
+        run: rustup target add wasm32-unknown-unknown
 
       - name: Install Linux dependencies
         if: ${{ matrix.os == 'ubuntu-22.04' }}
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf pkg-config libssl-dev
 
       - name: Install wasm-bindgen-cli
         if: ${{ matrix.platform == 'web' }}
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: wasm-bindgen-cli
-
-      - name: Install wasm-opt
-        if: ${{ matrix.platform == 'web' }}
-        run: |
-          if [ "$RUNNER_OS" == "Linux" ]; then
-            curl -L https://github.com/WebAssembly/binaryen/releases/download/version_111/binaryen-version_111-x86_64-linux.tar.gz | tar xz
-            sudo cp binaryen-version_111/bin/wasm-opt /usr/local/bin/
-          elif [ "$RUNNER_OS" == "macOS" ]; then
-            brew install binaryen
-          else
-            choco install binaryen
-          fi
-        shell: bash
+        run: cargo install wasm-bindgen-cli
 
       - name: Build for Web
         if: ${{ matrix.platform == 'web' }}
         run: |
           cd opensvm-dioxus
-          dioxus build --platform web --release
+          cargo build --target wasm32-unknown-unknown --features web --release
 
       - name: Build for Desktop (macOS/Linux)
         if: ${{ matrix.platform == 'desktop' && matrix.os != 'windows-latest' }}
         run: |
           cd opensvm-dioxus
-          RUSTFLAGS="-C target-cpu=native" dioxus build --platform desktop --release
+          RUSTFLAGS="-C target-cpu=native" cargo build --features desktop --release
         shell: bash
 
       - name: Build for Desktop (Windows)
@@ -102,7 +81,7 @@ jobs:
         run: |
           cd opensvm-dioxus
           $env:RUSTFLAGS="-C target-cpu=native"
-          dioxus build --platform desktop --release
+          cargo build --features desktop --release
         shell: pwsh
 
       - name: Run tests
@@ -115,7 +94,8 @@ jobs:
         with:
           name: opensvm-dioxus-${{ matrix.os }}-${{ matrix.platform }}
           path: |
-            opensvm-dioxus/dist/
+            opensvm-dioxus/target/*/release/opensvm-dioxus*
+            opensvm-dioxus/target/release/opensvm-dioxus*
 
   release:
     name: Create Release
@@ -136,24 +116,31 @@ jobs:
           mkdir -p release-assets
 
           # Web (WASM)
-          if [ -d "artifacts/opensvm-dioxus-ubuntu-22.04-web/web" ]; then
-            cd artifacts/opensvm-dioxus-ubuntu-22.04-web/web
-            zip -r ../../../release-assets/opensvm-dioxus-web.zip .
-            cd ../../..
+          if [ -d "artifacts/opensvm-dioxus-ubuntu-22.04-web" ]; then
+            cd artifacts/opensvm-dioxus-ubuntu-22.04-web
+            zip -r ../release-assets/opensvm-dioxus-web.zip .
+            cd ..
           fi
 
           # macOS
-          if [ -d "artifacts/opensvm-dioxus-macos-latest-desktop/desktop" ]; then
-            cd artifacts/opensvm-dioxus-macos-latest-desktop/desktop
-            zip -r ../../../release-assets/opensvm-dioxus-macos.zip .
-            cd ../../..
+          if [ -d "artifacts/opensvm-dioxus-macos-latest-desktop" ]; then
+            cd artifacts/opensvm-dioxus-macos-latest-desktop
+            zip -r ../release-assets/opensvm-dioxus-macos.zip .
+            cd ..
           fi
 
           # Windows
-          if [ -d "artifacts/opensvm-dioxus-windows-latest-desktop/desktop" ]; then
-            cd artifacts/opensvm-dioxus-windows-latest-desktop/desktop
-            zip -r ../../../release-assets/opensvm-dioxus-windows.zip .
-            cd ../../..
+          if [ -d "artifacts/opensvm-dioxus-windows-latest-desktop" ]; then
+            cd artifacts/opensvm-dioxus-windows-latest-desktop
+            zip -r ../release-assets/opensvm-dioxus-windows.zip .
+            cd ..
+          fi
+
+          # Android
+          if [ -d "artifacts/opensvm-dioxus-android" ]; then
+            cd artifacts/opensvm-dioxus-android
+            zip -r ../release-assets/opensvm-dioxus-android.zip .
+            cd ..
           fi
         shell: bash
 
@@ -247,21 +234,12 @@ jobs:
           java-version: '17'
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          target: aarch64-linux-android
+          targets: aarch64-linux-android
 
       - name: Install Android SDK
         uses: android-actions/setup-android@v3
-
-      - name: Install Dioxus CLI
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: dioxus-cli --force
 
       - name: Cache dependencies
         uses: actions/cache@v4
@@ -276,28 +254,10 @@ jobs:
       - name: Build for Android
         run: |
           cd opensvm-dioxus
-          RUSTFLAGS="-C opt-level=3 -C lto=thin" dioxus build --platform android --release
-
-      - name: Optimize APK
-        run: |
-          cd opensvm-dioxus/dist/android
-          if [ -f "app-release-unsigned.apk" ]; then
-            $ANDROID_HOME/build-tools/33.0.0/zipalign -v -p 4 app-release-unsigned.apk app-release-aligned.apk
-            # Create a debug keystore for signing (in production, use proper keystore)
-            keytool -genkey -v -keystore debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Debug,O=Android,C=US"
-            $ANDROID_HOME/build-tools/33.0.0/apksigner sign --ks debug.keystore --ks-pass pass:android --key-pass pass:android --out opensvm-dioxus.apk app-release-aligned.apk
-          fi
+          RUSTFLAGS="-C opt-level=3 -C lto=thin" cargo build --target aarch64-linux-android --features android --release
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
         with:
           name: opensvm-dioxus-android
-          path: opensvm-dioxus/dist/android/opensvm-dioxus.apk
-
-      - name: Add Android APK to release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: opensvm-dioxus/dist/android/opensvm-dioxus.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          path: opensvm-dioxus/target/aarch64-linux-android/release/opensvm-dioxus

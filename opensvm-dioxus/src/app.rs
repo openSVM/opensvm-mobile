@@ -2,14 +2,9 @@ use dioxus::prelude::*;
 use dioxus_router::prelude::*;
 
 use crate::routes::{
-    explorer::ExplorerPage,
-    validators::ValidatorsPage,
-    solanow::SolanowPage,
+    account::AccountPage, ai::AIPage, explorer::ExplorerPage, not_found::NotFoundPage,
+    solanow::SolanowPage, transaction::TransactionPage, validators::ValidatorsPage,
     wallet::WalletPage,
-    ai::AIPage,
-    transaction::TransactionPage,
-    account::AccountPage,
-    not_found::NotFoundPage,
 };
 
 // Define the routes for our app
@@ -68,21 +63,21 @@ fn AI(cx: Scope) -> Element {
 }
 
 #[component]
-fn Transaction(cx: Scope, id: String) -> Element {
+fn Transaction(cx: Scope, #[allow(unused_variables)] id: String) -> Element {
     cx.render(rsx! { TransactionPage {} })
 }
 
 #[component]
 fn Account(cx: Scope, address: String) -> Element {
-    cx.render(rsx! { 
-        AccountPage { 
-            address: address.clone() 
-        } 
+    cx.render(rsx! {
+        AccountPage {
+            address: address.clone()
+        }
     })
 }
 
 #[component]
-fn NotFound(cx: Scope, route: Vec<String>) -> Element {
+fn NotFound(cx: Scope, #[allow(unused_variables)] route: Vec<String>) -> Element {
     cx.render(rsx! { NotFoundPage {} })
 }
 
