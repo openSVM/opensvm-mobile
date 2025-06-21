@@ -7,6 +7,9 @@ mod routes;
 mod stores;
 mod utils;
 
+#[cfg(feature = "desktop")]
+mod desktop_config;
+
 use app::App;
 
 fn main() {
@@ -28,6 +31,7 @@ fn main() {
         // Initialize logger for desktop
         use dioxus_desktop::{Config, LogicalSize, WindowBuilder};
         use log::LevelFilter;
+        use desktop_config::DesktopConfig;
 
         // Set up desktop logger
         simple_logger::SimpleLogger::new()
@@ -35,13 +39,33 @@ fn main() {
             .init()
             .expect("Failed to initialize logger");
 
-        // Configure window
-        let window = WindowBuilder::new()
-            .with_title("OpenSVM Dioxus")
-            .with_inner_size(LogicalSize::new(1024.0, 768.0));
+        // Load desktop configuration
+        let config = DesktopConfig::load();
+        
+        log::info!("Starting desktop app with config: {:?}", config);
 
-        // Launch desktop app with simplified config
-        dioxus_desktop::launch_cfg(App, Config::new().with_window(window));
+        // Configure window with loaded settings
+        let mut window_builder = WindowBuilder::new()
+            .with_title(&config.window.title)
+            .with_inner_size(LogicalSize::new(config.window.width, config.window.height))
+            .with_resizable(config.window.resizable);
+
+        if let (Some(min_w), Some(min_h)) = (config.window.min_width, config.window.min_height) {
+            window_builder = window_builder.with_min_inner_size(LogicalSize::new(min_w, min_h));
+        }
+
+        // Configure the desktop app
+        let mut desktop_config = Config::new().with_window(window_builder);
+
+        // Add menu configuration if enabled
+        if config.menu.enabled {
+            log::info!("Desktop menu enabled with {} custom items", config.menu.custom_items.len());
+            // Note: Dioxus 0.4 may have different menu API
+            // This is a placeholder for menu configuration
+        }
+
+        // Launch desktop app with configuration
+        dioxus_desktop::launch_cfg(App, desktop_config);
     }
 
     #[cfg(feature = "android")]

@@ -59,15 +59,35 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libayatana-appindicator3-dev librsvg2-dev patchelf pkg-config libssl-dev libsoup-3.0-dev
 
-      - name: Install wasm-bindgen-cli
+      - name: Install wasm-bindgen-cli and wasm-opt
         if: ${{ matrix.platform == 'web' }}
-        run: cargo install wasm-bindgen-cli
+        run: |
+          cargo install wasm-bindgen-cli
+          # Install wasm-opt via binaryen
+          curl -L https://github.com/WebAssembly/binaryen/releases/download/version_117/binaryen-version_117-x86_64-linux.tar.gz | tar xz
+          sudo cp binaryen-version_117/bin/wasm-opt /usr/local/bin/
+          wasm-opt --version
 
       - name: Build for Web
         if: ${{ matrix.platform == 'web' }}
         run: |
           cd opensvm-dioxus
           cargo build --target wasm32-unknown-unknown --features web --release --no-default-features
+          
+          # Optimize WASM binary with wasm-opt
+          echo "Original WASM size:"
+          ls -lh target/wasm32-unknown-unknown/release/opensvm_dioxus.wasm
+          
+          wasm-opt -Oz --enable-mutable-globals \
+            target/wasm32-unknown-unknown/release/opensvm_dioxus.wasm \
+            -o target/wasm32-unknown-unknown/release/opensvm_dioxus_opt.wasm
+          
+          # Replace original with optimized version
+          mv target/wasm32-unknown-unknown/release/opensvm_dioxus_opt.wasm \
+             target/wasm32-unknown-unknown/release/opensvm_dioxus.wasm
+          
+          echo "Optimized WASM size:"
+          ls -lh target/wasm32-unknown-unknown/release/opensvm_dioxus.wasm
 
       - name: Build for Desktop (macOS)
         if: ${{ matrix.platform == 'desktop' && matrix.os == 'macos-latest' }}
@@ -187,12 +207,84 @@ jobs:
           VERSION=${GITHUB_REF#refs/tags/v}
           DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/opensvm-dioxus-macos.zip"
 
-          # Wait for release to be available
-          sleep 30
+          # Function to retry downloading with exponential backoff
+          download_with_retry() {
+            local url="$1"
+            local output="$2"
+            local max_attempts=5
+            local attempt=1
+            local delay=10
 
-          # Calculate SHA256 of the released asset
-          curl -L -o opensvm-dioxus-macos.zip "$DOWNLOAD_URL" || exit 1
+            while [ $attempt -le $max_attempts ]; do
+              echo "Attempt $attempt/$max_attempts: Downloading $url"
+              
+              if curl -L --fail --retry 3 --retry-delay 5 -o "$output" "$url"; then
+                echo "Download successful on attempt $attempt"
+                return 0
+              fi
+              
+              echo "Download failed on attempt $attempt"
+              
+              if [ $attempt -eq $max_attempts ]; then
+                echo "All download attempts failed"
+                return 1
+              fi
+              
+              echo "Waiting ${delay} seconds before next attempt..."
+              sleep $delay
+              delay=$((delay * 2))  # Exponential backoff
+              attempt=$((attempt + 1))
+            done
+          }
+
+          # Wait for release to be available with health check
+          echo "Checking if release is available..."
+          HEALTH_CHECK_URL="https://api.github.com/repos/${{ github.repository }}/releases/tags/v${VERSION}"
+          max_wait_attempts=12  # 12 * 10 seconds = 2 minutes max wait
+          wait_attempt=1
+          
+          while [ $wait_attempt -le $max_wait_attempts ]; do
+            echo "Health check attempt $wait_attempt/$max_wait_attempts"
+            
+            if curl -s --fail "$HEALTH_CHECK_URL" > /dev/null; then
+              echo "Release found in GitHub API"
+              break
+            fi
+            
+            if [ $wait_attempt -eq $max_wait_attempts ]; then
+              echo "Release not found after waiting, proceeding anyway..."
+              break
+            fi
+            
+            echo "Release not yet available, waiting 10 seconds..."
+            sleep 10
+            wait_attempt=$((wait_attempt + 1))
+          done
+
+          # Download the release asset with retry logic
+          if ! download_with_retry "$DOWNLOAD_URL" "opensvm-dioxus-macos.zip"; then
+            echo "Failed to download release asset after all retries"
+            echo "URL: $DOWNLOAD_URL"
+            echo "Checking available assets..."
+            curl -s "https://api.github.com/repos/${{ github.repository }}/releases/tags/v${VERSION}" | jq '.assets[].name' || true
+            exit 1
+          fi
+
+          # Verify the downloaded file
+          if [ ! -f "opensvm-dioxus-macos.zip" ] || [ ! -s "opensvm-dioxus-macos.zip" ]; then
+            echo "Downloaded file is missing or empty"
+            exit 1
+          fi
+
+          # Calculate SHA256 of the downloaded asset
           SHA256=$(shasum -a 256 opensvm-dioxus-macos.zip | awk '{print $1}')
+          echo "Calculated SHA256: $SHA256"
+
+          # Validate SHA256 format
+          if ! echo "$SHA256" | grep -q '^[a-f0-9]\{64\}$'; then
+            echo "Invalid SHA256 format: $SHA256"
+            exit 1
+          fi
 
           # Create formula directory if it doesn't exist
           mkdir -p Formula
@@ -213,16 +305,33 @@ jobs:
           end
           EOF
 
+          # Validate the generated formula syntax
+          if ! ruby -c Formula/opensvm-dioxus.rb; then
+            echo "Generated formula has syntax errors"
+            exit 1
+          fi
+
+          echo "Generated formula:"
+          cat Formula/opensvm-dioxus.rb
+
           # Create a new branch for the formula update
           git checkout -b update-homebrew-formula-v$VERSION
 
-          # Commit and push changes
+          # Commit and push changes with error handling
           git add Formula/opensvm-dioxus.rb
           git commit -m "Update Homebrew formula to v$VERSION"
-          git push origin update-homebrew-formula-v$VERSION
+          
+          if ! git push origin update-homebrew-formula-v$VERSION; then
+            echo "Failed to push branch, may already exist"
+            git push --force origin update-homebrew-formula-v$VERSION
+          fi
 
-          # Create pull request using GitHub CLI
-          gh pr create --title "Update Homebrew formula to v$VERSION" --body "Updates the Homebrew formula for opensvm-dioxus to version $VERSION" --base main --head update-homebrew-formula-v$VERSION
+          # Create pull request using GitHub CLI with error handling
+          if ! gh pr create --title "Update Homebrew formula to v$VERSION" --body "Updates the Homebrew formula for opensvm-dioxus to version $VERSION" --base main --head update-homebrew-formula-v$VERSION; then
+            echo "Failed to create PR, it may already exist"
+            echo "Checking existing PRs..."
+            gh pr list --head update-homebrew-formula-v$VERSION || true
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
