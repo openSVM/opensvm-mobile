@@ -1,4 +1,3 @@
----
 name: CI/CD Pipeline
 
 on:
@@ -19,9 +18,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-22.04, macos-latest, windows-latest]
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             target: wasm32-unknown-unknown
             platform: web
           - os: macos-latest
@@ -60,7 +59,7 @@ jobs:
           args: dioxus-cli --force
 
       - name: Install Linux dependencies
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
@@ -121,177 +120,5 @@ jobs:
   release:
     name: Create Release
     needs: build-and-test
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Prepare release assets
-        run: |
-          mkdir -p release-assets
-
-          # Web (WASM)
-          if [ -d "artifacts/opensvm-dioxus-ubuntu-latest-web/web" ]; then
-            cd artifacts/opensvm-dioxus-ubuntu-latest-web/web
-            zip -r ../../../release-assets/opensvm-dioxus-web.zip .
-            cd ../../..
-          fi
-
-          # macOS
-          if [ -d "artifacts/opensvm-dioxus-macos-latest-desktop/desktop" ]; then
-            cd artifacts/opensvm-dioxus-macos-latest-desktop/desktop
-            zip -r ../../../release-assets/opensvm-dioxus-macos.zip .
-            cd ../../..
-          fi
-
-          # Windows
-          if [ -d "artifacts/opensvm-dioxus-windows-latest-desktop/desktop" ]; then
-            cd artifacts/opensvm-dioxus-windows-latest-desktop/desktop
-            zip -r ../../../release-assets/opensvm-dioxus-windows.zip .
-            cd ../../..
-          fi
-        shell: bash
-
-      - name: Create GitHub Release
-        id: create_release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: release-assets/*
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  homebrew:
-    name: Update Homebrew Formula
-    needs: release
-    if: startsWith(github.ref, 'refs/tags/v')
-    runs-on: macos-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Git
-        run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-
-      - name: Download macOS artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: opensvm-dioxus-macos-latest-desktop
-          path: macos-artifact
-
-      - name: Create Homebrew Formula
-        run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
-          DOWNLOAD_URL="https://github.com/${{ github.repository }}/releases/download/v${VERSION}/opensvm-dioxus-macos.zip"
-
-          # Calculate SHA256
-          curl -L -o opensvm-dioxus-macos.zip "$DOWNLOAD_URL"
-          SHA256=$(shasum -a 256 opensvm-dioxus-macos.zip | awk '{print $1}')
-
-          # Create formula directory if it doesn't exist
-          mkdir -p Formula
-
-          # Create or update formula file
-          cat > Formula/opensvm-dioxus.rb << EOF
-          class OpensvmDioxus < Formula
-            desc "OpenSVM Dioxus application for Solana blockchain ecosystem"
-            homepage "https://github.com/${{ github.repository }}"
-            url "$DOWNLOAD_URL"
-            sha256 "$SHA256"
-            version "$VERSION"
-
-            def install
-              libexec.install Dir["*"]
-              bin.install_symlink libexec/"opensvm-dioxus"
-            end
-          end
-          EOF
-
-          # Create a new branch
-          git checkout -b update-homebrew-formula-v$VERSION
-
-          # Commit and push changes
-          git add Formula/opensvm-dioxus.rb
-          git commit -m "Update Homebrew formula to v$VERSION"
-          git push origin update-homebrew-formula-v$VERSION
-
-          # Create pull request
-          gh pr create --title "Update Homebrew formula to v$VERSION" --body "Updates the Homebrew formula for opensvm-dioxus to version $VERSION" --base main --head update-homebrew-formula-v$VERSION
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  android-build:
-    name: Build Android
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
-          target: aarch64-linux-android
-
-      - name: Install Android SDK
-        uses: android-actions/setup-android@v2
-
-      - name: Install Dioxus CLI
-        uses: actions-rs/cargo@v1
-        with:
-          command: install
-          args: dioxus-cli --force
-
-      - name: Cache dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            opensvm-dioxus/target
-          key: android-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: android-cargo-
-
-      - name: Build for Android
-        run: |
-          cd opensvm-dioxus
-          RUSTFLAGS="-C opt-level=3 -C lto=thin" dioxus build --features android --platform android --release
-
-      - name: Optimize APK
-        run: |
-          cd opensvm-dioxus/dist/android
-          $ANDROID_HOME/build-tools/33.0.0/zipalign -v -p 4 app-release-unsigned.apk app-release-aligned.apk
-          $ANDROID_HOME/build-tools/33.0.0/apksigner sign --ks debug.keystore --ks-pass pass:android --key-pass pass:android --out opensvm-dioxus.apk app-release-aligned.apk
-
-      - name: Upload Android artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: opensvm-dioxus-android
-          path: opensvm-dioxus/dist/android/opensvm-dioxus.apk
-
-      - name: Add Android APK to release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: opensvm-dioxus/dist/android/opensvm-dioxus.apk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    if: startsWith(github.ref](#)
+
