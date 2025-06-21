@@ -59,20 +59,20 @@ jobs:
           args: dioxus-cli --force
 
       - name: Install Linux dependencies
-        if: matrix.os == 'ubuntu-22.04'
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
         run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Install wasm-bindgen-cli
-        if: matrix.platform == 'web'
+        if: ${{ matrix.platform == 'web' }}
         uses: actions-rs/cargo@v1
         with:
           command: install
           args: wasm-bindgen-cli
 
       - name: Install wasm-opt
-        if: matrix.platform == 'web'
+        if: ${{ matrix.platform == 'web' }}
         run: |
           if [ "$RUNNER_OS" == "Linux" ]; then
             curl -L https://github.com/WebAssembly/binaryen/releases/download/version_111/binaryen-version_111-x86_64-linux.tar.gz | tar xz
@@ -85,20 +85,20 @@ jobs:
         shell: bash
 
       - name: Build for Web
-        if: matrix.platform == 'web'
+        if: ${{ matrix.platform == 'web' }}
         run: |
           cd opensvm-dioxus
           dioxus build --features web --profile wasm-release --platform web --release
 
       - name: Build for Desktop (macOS/Linux)
-        if: matrix.platform == 'desktop' && matrix.os != 'windows-latest'
+        if: ${{ matrix.platform == 'desktop' && matrix.os != 'windows-latest' }}
         run: |
           cd opensvm-dioxus
           RUSTFLAGS="-C target-cpu=native" dioxus build --features desktop --profile desktop-release --platform desktop --release
         shell: bash
 
       - name: Build for Desktop (Windows)
-        if: matrix.platform == 'desktop' && matrix.os == 'windows-latest'
+        if: ${{ matrix.platform == 'desktop' && matrix.os == 'windows-latest' }}
         run: |
           cd opensvm-dioxus
           $env:RUSTFLAGS="-C target-cpu=native"
@@ -120,5 +120,46 @@ jobs:
   release:
     name: Create Release
     needs: build-and-test
-    if: startsWith(github.ref](#)
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+
+          # Web (WASM)
+          if [ -d "artifacts/opensvm-dioxus-ubuntu-22.04-web/web" ]; then
+            cd artifacts/opensvm-dioxus-ubuntu-22.04-web/web
+            zip -r ../../../release-assets/opensvm-dioxus-web.zip .
+            cd ../../..
+          fi
+
+          # macOS
+          if [ -d "artifacts/opensvm-dioxus-macos-latest-desktop/desktop" ]; then
+            cd artifacts/opensvm-dioxus-macos-latest-desktop/desktop
+            zip -r ../../../release-assets/opensvm-dioxus-macos.zip .
+            cd ../../..
+          fi
+
+          # Windows
+          if [ -d "artifacts/opensvm-dioxus-windows-latest-desktop/desktop" ]; then
+            cd artifacts/opensvm-dioxus-windows-latest-desktop/desktop
+            zip -r ../../../release-assets/opensvm-dioxus-windows.zip .
+            cd ../../..
+          fi
+        shell: bash
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: release-assets](#)
 
