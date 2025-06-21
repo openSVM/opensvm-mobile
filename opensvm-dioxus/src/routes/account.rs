@@ -45,7 +45,7 @@ pub fn AccountPage(cx: Scope<AccountPageProps>) -> Element {
                 }
             }
 
-            #[cfg(not(feature = "web"))]
+            #[cfg(feature = "desktop")]
             {
                 let client = SolanaApiClient::new();
 

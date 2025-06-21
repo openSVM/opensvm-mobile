@@ -67,13 +67,20 @@ jobs:
         if: ${{ matrix.platform == 'web' }}
         run: |
           cd opensvm-dioxus
-          cargo build --target wasm32-unknown-unknown --features web --release
+          cargo build --target wasm32-unknown-unknown --features web --release --no-default-features
 
-      - name: Build for Desktop (macOS/Linux)
-        if: ${{ matrix.platform == 'desktop' && matrix.os != 'windows-latest' }}
+      - name: Build for Desktop (macOS)
+        if: ${{ matrix.platform == 'desktop' && matrix.os == 'macos-latest' }}
         run: |
           cd opensvm-dioxus
-          RUSTFLAGS="-C target-cpu=native" cargo build --features desktop --release
+          RUSTFLAGS="-C target-cpu=native" cargo build --features desktop --release --no-default-features
+        shell: bash
+
+      - name: Build for Desktop (Linux)
+        if: ${{ matrix.platform == 'desktop' && matrix.os == 'ubuntu-22.04' }}
+        run: |
+          cd opensvm-dioxus
+          RUSTFLAGS="-C target-cpu=native" cargo build --features desktop --release --no-default-features
         shell: bash
 
       - name: Build for Desktop (Windows)
@@ -81,13 +88,13 @@ jobs:
         run: |
           cd opensvm-dioxus
           $env:RUSTFLAGS="-C target-cpu=native"
-          cargo build --features desktop --release
+          cargo build --features desktop --release --no-default-features
         shell: pwsh
 
       - name: Run tests
         run: |
           cd opensvm-dioxus
-          cargo test --features ${{ matrix.platform }}
+          cargo test --features ${{ matrix.platform }} --no-default-features
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -254,7 +261,7 @@ jobs:
       - name: Build for Android
         run: |
           cd opensvm-dioxus
-          RUSTFLAGS="-C opt-level=3 -C lto=thin" cargo build --target aarch64-linux-android --features android --release
+          RUSTFLAGS="-C opt-level=3 -C lto=thin" cargo build --target aarch64-linux-android --features android --release --no-default-features
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4

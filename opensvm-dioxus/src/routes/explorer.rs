@@ -35,7 +35,7 @@ pub fn ExplorerPage(cx: Scope) -> Element {
                 }
             }
 
-            #[cfg(not(feature = "web"))]
+            #[cfg(feature = "desktop")]
             {
                 let client = SolanaApiClient::new();
                 match client.get_network_stats().await {
