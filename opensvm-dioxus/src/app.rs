@@ -6,6 +6,10 @@ use crate::routes::{
     solanow::SolanowPage, transaction::TransactionPage, validators::ValidatorsPage,
     wallet::WalletPage,
 };
+use crate::stores::theme_store::{use_theme_store, get_current_theme, Theme};
+
+#[cfg(feature = "web")]
+use web_sys::{window, MediaQueryList};
 
 // Define the routes for our app
 #[derive(Routable, Clone)]
@@ -83,6 +87,37 @@ fn NotFound(cx: Scope, #[allow(unused_variables)] route: Vec<String>) -> Element
 
 // Main App component
 pub fn App(cx: Scope) -> Element {
+    let theme_store = use_theme_store(cx);
+    let current_theme = get_current_theme(theme_store);
+    
+    // Apply theme to document body
+    use_effect(cx, (&current_theme,), |(theme,)| {
+        async move {
+            #[cfg(feature = "web")]
+            {
+                if let Some(window) = web_sys::window() {
+                    if let Some(document) = window.document() {
+                        if let Some(body) = document.body() {
+                            let theme_str = match theme {
+                                Theme::Light => "light",
+                                Theme::Dark => "dark",
+                                Theme::System => {
+                                    // Use media query to determine system theme
+                                    if let Ok(Some(media_query)) = window.match_media("(prefers-color-scheme: dark)") {
+                                        if media_query.matches() { "dark" } else { "light" }
+                                    } else {
+                                        "light"
+                                    }
+                                }
+                            };
+                            let _ = body.set_attribute("data-theme", theme_str);
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
     cx.render(rsx! {
         style { include_str!("./assets/styles.css") }
         Router::<Route> {}
