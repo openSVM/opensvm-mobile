@@ -2,21 +2,17 @@ use dioxus::prelude::*;
 use dioxus_router::prelude::*;
 
 use crate::routes::{
-    explorer::ExplorerPage,
-    validators::ValidatorsPage,
-    solanow::SolanowPage,
+    account::AccountPage, ai::AIPage, explorer::ExplorerPage, not_found::NotFoundPage,
+    solanow::SolanowPage, transaction::TransactionPage, validators::ValidatorsPage,
     wallet::WalletPage,
-    ai::AIPage,
-    transaction::TransactionPage,
-    account::AccountPage,
-    not_found::NotFoundPage,
 };
 
 // Define the routes for our app
 #[derive(Routable, Clone)]
-pub enum Route {
+#[rustfmt::skip]
+enum Route {
     #[route("/")]
-    Explorer {},
+    Home {},
     
     #[route("/validators")]
     Validators {},
@@ -33,11 +29,56 @@ pub enum Route {
     #[route("/transaction/:id")]
     Transaction { id: String },
     
-    #[route("/account/:id")]
-    Account { id: String },
+    #[route("/account/:address")]
+    Account { address: String },
     
-    #[route("/:..segments")]
-    NotFound { segments: Vec<String> },
+    #[route("/:..route")]
+    NotFound { route: Vec<String> },
+}
+
+// Route component implementations
+#[component]
+fn Home(cx: Scope) -> Element {
+    cx.render(rsx! { ExplorerPage {} })
+}
+
+#[component]
+fn Validators(cx: Scope) -> Element {
+    cx.render(rsx! { ValidatorsPage {} })
+}
+
+#[component]
+fn Solanow(cx: Scope) -> Element {
+    cx.render(rsx! { SolanowPage {} })
+}
+
+#[component]
+fn Wallet(cx: Scope) -> Element {
+    cx.render(rsx! { WalletPage {} })
+}
+
+#[component(no_case_check)]
+fn AI(cx: Scope) -> Element {
+    cx.render(rsx! { AIPage {} })
+}
+
+#[component]
+fn Transaction(cx: Scope, #[allow(unused_variables)] id: String) -> Element {
+    cx.render(rsx! { TransactionPage {} })
+}
+
+#[component]
+fn Account(cx: Scope, address: String) -> Element {
+    cx.render(rsx! {
+        AccountPage {
+            address: address.clone()
+        }
+    })
+}
+
+#[component]
+fn NotFound(cx: Scope, #[allow(unused_variables)] route: Vec<String>) -> Element {
+    cx.render(rsx! { NotFoundPage {} })
 }
 
 // Main App component

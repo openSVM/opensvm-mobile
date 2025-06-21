@@ -1,183 +1,179 @@
+//! Explorer page
+
+use crate::utils::api::NetworkStats;
+#[cfg(feature = "desktop")]
+#[allow(unused_imports)]
+use crate::utils::api::SolanaApiClient;
+use dioxus::events::MouseData;
 use dioxus::prelude::*;
-use dioxus_router::prelude::*;
-use dioxus_free_icons::icons::lucide_icons::ChevronRight;
-use dioxus_free_icons::Icon;
 
-use crate::components::search_bar::SearchBar;
-use crate::components::network_stats::NetworkStats;
-use crate::components::validator_analytics::ValidatorAnalytics;
-use crate::components::ai_assistant::AIAssistant;
-use crate::components::transaction_list::TransactionList;
-use crate::app::Route;
-
-// Mock data
-const MOCK_STATS: [(u64, u64, u64, u64, f64, u64); 1] = [
-    (323139497, 1388, 4108, 748, 0.81, 323139497),
-];
-
-// Explorer page component
-#[component]
+/// Explorer page component
 pub fn ExplorerPage(cx: Scope) -> Element {
-    let is_loading = use_state(cx, || true);
-    let search_results = use_state(cx, || None::<Vec<SearchResult>>);
-    let navigator = use_navigator(cx);
-    
-    // Simulate initial loading
+    let network_stats = use_state(cx, || Option::<NetworkStats>::None);
+    let loading = use_state(cx, || true);
+    let error = use_state(cx, || Option::<String>::None);
+    let search_input = use_state(cx, String::new);
+
+    // Load network stats on component mount
     use_effect(cx, (), |_| {
-        to_owned![is_loading];
+        let network_stats = network_stats.to_owned();
+        let loading = loading.to_owned();
+        let error = error.to_owned();
+
         async move {
-            // Simulate network delay
-            gloo::timers::future::TimeoutFuture::new(2000).await;
-            is_loading.set(false);
-        }
-    });
-    
-    // Handle search
-    let handle_search = move |query: String| {
-        if query.trim().is_empty() {
-            search_results.set(None);
-            return;
-        }
-        
-        // Simulate search results
-        let results = vec![
-            SearchResult {
-                type_: "transaction".to_string(),
-                id: "7nzUHcqRVGVsRKLzq9vEG8JqLkQHv6LPCC9JQZy54RVP".to_string(),
-                title: "Transaction".to_string(),
-            },
-            SearchResult {
-                type_: "block".to_string(),
-                id: "323139497".to_string(),
-                title: "Block #323139497".to_string(),
-            },
-            SearchResult {
-                type_: "account".to_string(),
-                id: "FD1".to_string(),
-                title: "Firedancer Main".to_string(),
-            },
-        ];
-        
-        search_results.set(Some(results));
-    };
-    
-    // Handle search result click
-    let handle_search_result_click = move |result: &SearchResult| {
-        match result.type_.as_str() {
-            "transaction" => {
-                navigator.push(Route::Transaction { id: result.id.clone() });
-            },
-            "block" => {
-                log::info!("Navigating to block {}", result.id);
-                // Not implemented yet
-            },
-            "account" => {
-                navigator.push(Route::Account { id: result.id.clone() });
-            },
-            _ => {}
-        }
-        
-        search_results.set(None);
-    };
-    
-    // Handle block click
-    let handle_block_click = move |block_number: u64| {
-        log::info!("Navigating to block {}", block_number);
-        // Not implemented yet
-    };
-    
-    cx.render(rsx! {
-        div { class: "container mx-auto pb-8",
-            // Search bar
-            SearchBar { on_search: handle_search }
-            
-            // Search results or main content
-            if let Some(results) = search_results.get() {
-                rsx! {
-                    div { class: "p-4",
-                        h3 { class: "text-lg font-bold mb-4", "Search Results" }
-                        
-                        div { class: "space-y-2",
-                            results.iter().map(|result| {
-                                let result_clone = result.clone();
-                                rsx! {
-                                    div {
-                                        key: "{result.id}",
-                                        class: "flex items-center justify-between p-3 bg-surface rounded border cursor-pointer hover:bg-[var(--surface-light)]",
-                                        onclick: move |_| handle_search_result_click(&result_clone),
-                                        
-                                        div { class: "flex flex-col",
-                                            span { class: "font-bold", "{result.title}" }
-                                            span { class: "text-sm mono text-secondary", "{result.id}" }
-                                        }
-                                        
-                                        Icon { icon: ChevronRight, width: 16, height: 16, fill: "var(--text-secondary)" }
-                                    }
-                                }
-                            })
-                        }
+            #[cfg(feature = "web")]
+            {
+                match crate::utils::api::web::fetch_network_stats().await {
+                    Ok(stats) => {
+                        network_stats.set(Some(stats));
+                        loading.set(false);
                     }
-                }
-            } else {
-                rsx! {
-                    // Network stats
-                    NetworkStats {
-                        blocks_processed: MOCK_STATS[0].0,
-                        active_validators: MOCK_STATS[0].1,
-                        tps: MOCK_STATS[0].2,
-                        epoch: MOCK_STATS[0].3,
-                        network_load: MOCK_STATS[0].4,
-                        block_height: MOCK_STATS[0].5,
-                        is_loading: *is_loading.get(),
+                    Err(e) => {
+                        error.set(Some(format!("Failed to load network stats: {:?}", e)));
+                        loading.set(false);
                     }
-                    
-                    // Validator analytics
-                    ValidatorAnalytics {}
-                    
-                    // Recent blocks
-                    div { class: "p-4",
-                        h3 { class: "text-lg font-bold mb-4", "Recent Blocks" }
-                        
-                        if *is_loading.get() {
-                            rsx! {
-                                div { class: "p-4 text-center text-secondary", "Loading blocks..." }
-                            }
-                        } else {
-                            rsx! {
-                                div { class: "space-y-2",
-                                    (0..5).map(|i| {
-                                        let block_number = MOCK_STATS[0].0 - i as u64;
-                                        rsx! {
-                                            div {
-                                                key: "{block_number}",
-                                                class: "flex items-center justify-between p-3 bg-surface rounded border cursor-pointer hover:bg-[var(--surface-light)]",
-                                                onclick: move |_| handle_block_click(block_number),
-                                                
-                                                span { class: "mono", "Block #{block_number}" }
-                                                Icon { icon: FaChevronRight, width: 20, height: 20, fill: "var(--text-secondary)" }
-                                            }
-                                        }
-                                    })
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Recent transactions
-                    TransactionList {}
                 }
             }
-            
-            // AI Assistant (hidden by default)
-            AIAssistant { expanded: false }
+
+            #[cfg(feature = "desktop")]
+            {
+                let client = SolanaApiClient::new();
+                match client.get_network_stats().await {
+                    Ok(stats) => {
+                        network_stats.set(Some(stats));
+                        loading.set(false);
+                    }
+                    Err(e) => {
+                        error.set(Some(format!("Failed to load network stats: {}", e)));
+                        loading.set(false);
+                    }
+                }
+            }
+        }
+    });
+
+    let handle_search = move |_evt: Event<MouseData>| {
+        let search_term = search_input.get().trim();
+        if !search_term.is_empty() {
+            // In a real implementation, this would navigate to account/transaction details
+            log::info!("Searching for: {}", search_term);
+        }
+    };
+
+    cx.render(rsx! {
+        div { class: "explorer-page",
+            // Header section
+            div { class: "header-section",
+                h1 { class: "page-title", "Solana Explorer" }
+                p { class: "page-description",
+                    "Explore the Solana blockchain with real-time data and AI assistance"
+                }
+
+                // Search bar
+                div { class: "search-section",
+                    div { class: "search-container",
+                        input {
+                            class: "search-input",
+                            placeholder: "Search for addresses, transactions, blocks...",
+                            value: "{search_input}",
+                            oninput: move |evt| search_input.set(evt.value.clone()),
+                            onkeypress: move |evt| {
+                                if evt.data.key().to_string() == "Enter" {
+                                    // Simulate a mouse event for the search handler
+                                    let search_term = search_input.get().trim();
+                                    if !search_term.is_empty() {
+                                        log::info!("Searching for: {}", search_term);
+                                    }
+                                }
+                            }
+                        }
+                        button {
+                            class: "search-button",
+                            onclick: handle_search,
+                            "🔍 Search"
+                        }
+                    }
+                }
+            }
+
+            // Network stats section
+            div { class: "network-stats-section",
+                h2 { "Network Overview" }
+
+                if **loading {
+                    rsx! {
+                        div { class: "loading",
+                            "Loading network statistics..."
+                        }
+                    }
+                } else if let Some(err) = error.get() {
+                    rsx! {
+                        div { class: "error",
+                            "Error: {err}"
+                        }
+                    }
+                } else if let Some(stats) = network_stats.get() {
+                    rsx! {
+                        div { class: "stats-grid",
+                            div { class: "stat-card",
+                                h3 { "Total Supply" }
+                                p { class: "stat-value",
+                                    "{stats.total_supply / 1_000_000_000} SOL"
+                                }
+                            }
+                            div { class: "stat-card",
+                                h3 { "Circulating Supply" }
+                                p { class: "stat-value",
+                                    "{stats.circulating_supply / 1_000_000_000} SOL"
+                                }
+                            }
+                            div { class: "stat-card",
+                                h3 { "Current Slot" }
+                                p { class: "stat-value", "{stats.current_slot}" }
+                            }
+                            div { class: "stat-card",
+                                h3 { "Current Epoch" }
+                                p { class: "stat-value", "{stats.epoch}" }
+                            }
+                            div { class: "stat-card",
+                                h3 { "Validators" }
+                                p { class: "stat-value", "{stats.validator_count}" }
+                            }
+                            div { class: "stat-card",
+                                h3 { "Avg Slot Time" }
+                                p { class: "stat-value", "{stats.avg_slot_time:.2}s" }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Quick actions section
+            div { class: "quick-actions-section",
+                h2 { "Quick Actions" }
+                div { class: "actions-grid",
+                    div { class: "action-card",
+                        h3 { "🏛️ Validators" }
+                        p { "Monitor validator performance and network health" }
+                        button { class: "action-button", "View Validators" }
+                    }
+                    div { class: "action-card",
+                        h3 { "💰 Wallet" }
+                        p { "Connect your wallet and manage your assets" }
+                        button { class: "action-button", "Connect Wallet" }
+                    }
+                    div { class: "action-card",
+                        h3 { "🤖 AI Assistant" }
+                        p { "Get help with blockchain questions and transactions" }
+                        button { class: "action-button", "Chat with AI" }
+                    }
+                    div { class: "action-card",
+                        h3 { "📊 Solanow" }
+                        p { "Real-time market data and analytics" }
+                        button { class: "action-button", "View Markets" }
+                    }
+                }
+            }
         }
     })
-}
-
-// Search result type
-#[derive(Clone)]
-struct SearchResult {
-    type_: String,
-    id: String,
-    title: String,
 }

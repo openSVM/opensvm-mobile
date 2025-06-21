@@ -1,0 +1,36 @@
+[application]
+name = "opensvm-dioxus"
+default_platform = "web"
+
+[web.app]
+title = "OpenSVM Dioxus"
+base_path = ""
+
+[web.watcher]
+reload_html = true
+watch_path = ["src", "assets"]
+
+[web.resource]
+style = ["src/assets/styles.css"]
+
+[web.proxy]
+
+[bundle]
+identifier = "com.opensvm.dioxus"
+publisher = "OpenSVM"
+icon = []
+resources = []
+copyright = ""
+category = "DeveloperTool"
+short_description = "OpenSVM Dioxus Application"
+long_description = "A cross-platform application for the Solana blockchain ecosystem"
+
+[bundle.macos]
+frameworks = []
+minimum_system_version = "10.11"
+license = ""
+exception_domain = ""
+
+[bundle.windows]
+allow_downgrades = true
+wix = []
