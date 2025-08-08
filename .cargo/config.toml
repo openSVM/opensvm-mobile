@@ -1,4 +1,9 @@
 [build]
-# Removed incompatible Rust flags
-# Previous configuration
+# Removed incompatible Rust flags to prevent build errors
+# Previous configuration was incompatible with LTO:
 # rustflags = "-C embed-bitcode=no"
+# 
+# NOTE: The flags "-C embed-bitcode=no" and "-C lto" are incompatible.
+# When using LTO (Link Time Optimization), avoid setting embed-bitcode=no
+# in rustflags as Cargo may automatically add it for certain targets.
+# Use profile-specific settings instead for better compatibility.

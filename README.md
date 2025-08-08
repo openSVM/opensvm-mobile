@@ -148,7 +148,7 @@ dioxus build --features desktop --profile desktop-release --platform desktop --r
 
 #### Android
 ```bash
-RUSTFLAGS="-C opt-level=3 -C lto=thin" dioxus build --features android --platform android --release
+dioxus build --features android --platform android --profile android-release
 ```
 
 ## Project Structure

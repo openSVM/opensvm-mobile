@@ -370,10 +370,10 @@ jobs:
       - name: Build for Android
         run: |
           cd opensvm-dioxus
-          RUSTFLAGS="-C opt-level=3 -C lto=thin" cargo build --target aarch64-linux-android --features android --release --no-default-features --bin opensvm_dioxus
+          cargo build --target aarch64-linux-android --features android --profile android-release --no-default-features --bin opensvm_dioxus
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
         with:
           name: opensvm-dioxus-android
-          path: opensvm-dioxus/target/aarch64-linux-android/release/opensvm_dioxus
+          path: opensvm-dioxus/target/aarch64-linux-android/android-release/opensvm_dioxus
