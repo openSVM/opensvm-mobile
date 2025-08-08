@@ -21,6 +21,9 @@ jobs:
         os: [ubuntu-22.04, macos-latest, windows-latest]
         include:
           - os: ubuntu-22.04
+            target: x86_64-linux
+            platform: desktop
+          - os: ubuntu-22.04
             target: wasm32-unknown-unknown
             platform: web
           - os: macos-latest
