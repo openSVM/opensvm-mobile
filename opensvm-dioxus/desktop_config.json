@@ -1,0 +1,44 @@
+{
+  "window": {
+    "title": "OpenSVM Explorer",
+    "width": 1200.0,
+    "height": 800.0,
+    "resizable": true,
+    "maximized": false,
+    "min_width": 800.0,
+    "min_height": 600.0
+  },
+  "menu": {
+    "enabled": true,
+    "show_file_menu": true,
+    "show_edit_menu": false,
+    "show_view_menu": true,
+    "show_help_menu": true,
+    "custom_items": [
+      {
+        "label": "Explorer",
+        "action": "navigate_explorer",
+        "shortcut": "Ctrl+E",
+        "enabled": true
+      },
+      {
+        "label": "Transactions",
+        "action": "navigate_transactions",  
+        "shortcut": "Ctrl+T",
+        "enabled": true
+      },
+      {
+        "label": "Validators",
+        "action": "navigate_validators",
+        "shortcut": "Ctrl+V",
+        "enabled": true
+      }
+    ]
+  },
+  "features": {
+    "auto_updater": false,
+    "system_tray": false,
+    "notifications": true,
+    "file_associations": false
+  }
+}

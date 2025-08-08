@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::prelude::*;
+
+#[cfg(feature = "web")]
 use web_sys::Storage;
 
 // Define the theme options
@@ -17,61 +18,86 @@ pub struct ThemeState {
     pub theme: Theme,
 }
 
-// Create a signal for the theme state
-pub fn use_theme_store() -> Signal<ThemeState> {
-    // Create a static signal to ensure the state persists across renders
-    static THEME_STORE: Signal<ThemeState> = Signal::new(ThemeState {
-        theme: Theme::System,
-    });
-    
-    // Initialize the store with data from local storage if available
-    use_hook(|| {
-        if let Some(storage) = get_local_storage() {
-            if let Ok(Some(stored_data)) = storage.get_item("theme-storage") {
-                if let Ok(theme_state) = serde_json::from_str::<ThemeState>(&stored_data) {
-                    THEME_STORE.set(theme_state);
+impl Default for ThemeState {
+    fn default() -> Self {
+        Self {
+            theme: Theme::System,
+        }
+    }
+}
+
+// Create a hook for the theme state
+pub fn use_theme_store(cx: &ScopeState) -> &UseState<ThemeState> {
+    let theme_state = use_state(cx, || {
+        // Try to load from local storage
+        #[cfg(feature = "web")]
+        {
+            if let Some(storage) = get_local_storage() {
+                if let Ok(Some(stored_data)) = storage.get_item("theme-storage") {
+                    if let Ok(theme_state) = serde_json::from_str::<ThemeState>(&stored_data) {
+                        return theme_state;
+                    }
                 }
             }
         }
+        ThemeState::default()
     });
-    
-    THEME_STORE
+
+    // Save to local storage whenever the state changes
+    use_effect(cx, (theme_state,), |(state,)| {
+        let state = state.get();
+        save_to_local_storage(state);
+        async move {}
+    });
+
+    theme_state
 }
 
 // Helper function to get local storage
+#[cfg(feature = "web")]
 fn get_local_storage() -> Option<Storage> {
     let window = web_sys::window()?;
     window.local_storage().ok()?
 }
 
+#[cfg(not(feature = "web"))]
+fn get_local_storage() -> Option<()> {
+    None
+}
+
 // Helper function to save state to local storage
 fn save_to_local_storage(state: &ThemeState) {
-    if let Some(storage) = get_local_storage() {
-        if let Ok(json) = serde_json::to_string(state) {
-            let _ = storage.set_item("theme-storage", &json);
+    #[cfg(feature = "web")]
+    {
+        if let Some(storage) = get_local_storage() {
+            if let Ok(json) = serde_json::to_string(state) {
+                let _ = storage.set_item("theme-storage", &json);
+            }
         }
     }
 }
 
 // Set theme function
-pub fn set_theme(theme_store: Signal<ThemeState>, theme: Theme) {
-    let mut state = theme_store.read().clone();
+pub fn set_theme(theme_store: &UseState<ThemeState>, theme: Theme) {
+    let mut state = theme_store.get().clone();
     state.theme = theme;
-    theme_store.set(state.clone());
-    save_to_local_storage(&state);
+    theme_store.set(state);
 }
 
 // Get current theme function
-pub fn get_current_theme(theme_store: Signal<ThemeState>) -> Theme {
-    let state = theme_store.read();
+pub fn get_current_theme(theme_store: &UseState<ThemeState>) -> Theme {
+    let state = theme_store.get();
     
     match state.theme {
         Theme::System => {
             // Check system preference using media query
-            if let Some(window) = web_sys::window() {
-                if let Ok(Some(media_query)) = window.match_media("(prefers-color-scheme: dark)") {
-                    if media_query.matches() {
-                        return Theme::Dark;
+            #[cfg(feature = "web")]
+            {
+                if let Some(window) = web_sys::window() {
+                    if let Ok(Some(media_query)) = window.match_media("(prefers-color-scheme: dark)") {
+                        if media_query.matches() {
+                            return Theme::Dark;
+                        }
                     }
                 }
             }
