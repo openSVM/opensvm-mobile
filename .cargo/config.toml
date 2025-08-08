@@ -7,3 +7,6 @@
 # When using LTO (Link Time Optimization), avoid setting embed-bitcode=no
 # in rustflags as Cargo may automatically add it for certain targets.
 # Use profile-specific settings instead for better compatibility.
+
+[target.aarch64-linux-android]
+linker = "aarch64-linux-android21-clang"

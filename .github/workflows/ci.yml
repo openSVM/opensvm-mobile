@@ -357,6 +357,15 @@ jobs:
       - name: Install Android SDK
         uses: android-actions/setup-android@v3
 
+      - name: Setup Android NDK
+        run: |
+          # Install Android NDK
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "ndk;25.0.8775105"
+          
+          # Set environment variables for Android NDK
+          echo "ANDROID_NDK_HOME=$ANDROID_HOME/ndk/25.0.8775105" >> $GITHUB_ENV
+          echo "$ANDROID_HOME/ndk/25.0.8775105/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
+
       - name: Cache dependencies
         uses: actions/cache@v4
         with:
