@@ -140,7 +140,7 @@ dioxus build --features web --profile wasm-release --platform web --release
 RUSTFLAGS="-C target-cpu=native -C opt-level=3" dioxus build --features desktop --profile desktop-release --platform desktop --release
 
 # Android (balanced optimization)
-RUSTFLAGS="-C opt-level=3 -C lto=thin" dioxus build --features android --platform android --release
+dioxus build --features android --platform android --profile android-release
 ```
 
 ## Continuous Integration
