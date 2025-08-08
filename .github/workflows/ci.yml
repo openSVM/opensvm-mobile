@@ -23,15 +23,15 @@ jobs:
           - os: ubuntu-22.04
             target: x86_64-linux
             platform: desktop
-          - os: ubuntu-22.04
-            target: wasm32-unknown-unknown
-            platform: web
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            platform: desktop
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            platform: desktop
+          # - os: ubuntu-22.04
+          #   target: wasm32-unknown-unknown
+          #   platform: web
+          # - os: macos-latest
+          #   target: x86_64-apple-darwin
+          #   platform: desktop
+          # - os: windows-latest
+          #   target: x86_64-pc-windows-msvc
+          #   platform: desktop
 
     steps:
       - name: Checkout repository
