@@ -23,15 +23,6 @@ jobs:
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             platform: desktop
-          # - os: ubuntu-22.04
-          #   target: wasm32-unknown-unknown
-          #   platform: web
-          # - os: macos-latest
-          #   target: x86_64-apple-darwin
-          #   platform: desktop
-          # - os: windows-latest
-          #   target: x86_64-pc-windows-msvc
-          #   platform: desktop
 
     steps:
       - name: Checkout repository
@@ -60,13 +51,25 @@ jobs:
         if: ${{ matrix.os == 'ubuntu-22.04' }}
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libayatana-appindicator3-dev librsvg2-dev patchelf pkg-config libssl-dev libsoup-3.0-dev
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.0-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            pkg-config \
+            libssl-dev \
+            libsoup-3.0-dev \
+            libjavascriptcoregtk-4.1-dev
+
+      - name: Set PKG_CONFIG_PATH for JavaScriptCoreGTK
+        if: ${{ matrix.os == 'ubuntu-22.04' }}
+        run: echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig" >> $GITHUB_ENV
 
       - name: Install wasm-bindgen-cli and wasm-opt
         if: ${{ matrix.platform == 'web' }}
         run: |
           cargo install wasm-bindgen-cli
-          # Install wasm-opt via binaryen
           curl -L https://github.com/WebAssembly/binaryen/releases/download/version_117/binaryen-version_117-x86_64-linux.tar.gz | tar xz
           sudo cp binaryen-version_117/bin/wasm-opt /usr/local/bin/
           wasm-opt --version
@@ -76,19 +79,13 @@ jobs:
         run: |
           cd opensvm-dioxus
           cargo build --release --target wasm32-unknown-unknown --bin opensvm_dioxus --features web --no-default-features
-          
-          # Optimize WASM binary with wasm-opt
           echo "Original WASM size:"
           ls -lh target/wasm32-unknown-unknown/release/opensvm_dioxus.wasm
-          
           wasm-opt -Oz --enable-mutable-globals \
             target/wasm32-unknown-unknown/release/opensvm_dioxus.wasm \
             -o target/wasm32-unknown-unknown/release/opensvm_dioxus_opt.wasm
-          
-          # Replace original with optimized version
           mv target/wasm32-unknown-unknown/release/opensvm_dioxus_opt.wasm \
              target/wasm32-unknown-unknown/release/opensvm_dioxus.wasm
-          
           echo "Optimized WASM size:"
           ls -lh target/wasm32-unknown-unknown/release/opensvm_dioxus.wasm
 
