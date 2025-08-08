@@ -73,7 +73,7 @@ fn main() {
         // Initialize logger for Android
         android_logger::init_once(
             android_logger::Config::default()
-                .with_min_level(log::Level::Debug)
+                .with_max_level(log::LevelFilter::Debug)
                 .with_tag("opensvm-dioxus"),
         );
 
