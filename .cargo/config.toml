@@ -1,0 +1,4 @@
+[build]
+# Removed incompatible Rust flags
+# Previous configuration
+# rustflags = "-C embed-bitcode=no"
